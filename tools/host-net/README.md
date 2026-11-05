@@ -43,6 +43,7 @@ Why routed rather than a true L2 bridge:
 | `GUEST_IP` | `amix-lan-up.sh`, `amix-lan-down.sh` | the Amix guest's address on your LAN (`192.0.2.38`) |
 | `TAP_ANCHOR` | `amix-lan-up.sh` | a host-side `/32` on the TAP, any address unused on your LAN (`192.0.2.17`) |
 | `ETH`, `TAP`, `TAP_OWNER` | `amix-lan-up.sh` | LAN uplink (autodetected from the default route), TAP name (`tap0`), TAP owner (the invoking user) |
+| `TAP_MTU` | `amix-lan-up.sh` | the TAP's MTU (`1400`); the script's comment says what that rests on and what is unmeasured |
 | `AMIX_HOST`, `AMIX_PORT`, `AMIX_USER`, `AMIX_PASS` | `amixsh.py`, `amixput.py`, `amixsync.py` | the guest to talk to (`192.0.2.38`), FTP port, login (`root` / a placeholder password) |
 | `AMIX_TIMEOUT` | `amixsh.py` | seconds to wait for each command (`60`) |
 

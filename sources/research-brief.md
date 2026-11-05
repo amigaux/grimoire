@@ -694,3 +694,7 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
 - 2026-11-05 — on a 68030 guest: `false` exits 255 ✅; a 237-byte line answers ✅, which moves the lower
   bound of the line limit from 229 to 237; a background job without `nohup` did not finish once its
   telnet login ended, and with `nohup` it did ✅, a hang-up being the likely cause 🟡.
+- 2026-11-05 — A2065 frame size under Amiberry: the June stall on frames near 1500 bytes is not reproduced
+  guest to guest ✅ (first-party: two guests, k46 with k46 and k30 with k46, on bridged taps at 1500; ftp
+  and NFS completed, card error counters 0). Guest to host above 1400, the LAN tap above 1400, the
+  Amiberry commit that changed it and real hardware 🔴 (not run). `ifconfig aen0 mtu 1400` is refused ✅.

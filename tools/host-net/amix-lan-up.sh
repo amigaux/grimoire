@@ -33,13 +33,22 @@ if ! ip link show "$TAP" >/dev/null 2>&1; then
     fi
 fi
 ip link set "$TAP" up
-# Cap the tap MTU so the host advertises a smaller TCP MSS to the guest. The
-# emulated A2065 silently DROPS full ~1500-byte frames on TX (guest->host), which
-# stalls every bulk transfer OFF the box (ftp GET, large writes) at ~4 KB while
-# small transfers and host->guest pushes work. 1400 keeps the guest's frames under
-# the drop threshold (~1500). Confirmed 2026-06-22: a 1.5 MB GET went 0 bytes ->
-# full transfer once mtu <= 1450. (For UDP/NFS off the box, also lower the guest's
-# aen0 MTU: `ifconfig aen0 ... mtu 1400`.)
+# Cap the tap MTU so the host advertises a smaller TCP MSS to the guest. 1400 comes
+# from an earlier Amiberry, measured 2026-06-22: bulk transfers off the box (ftp GET,
+# large writes) stalled at ~4 KB while small transfers and host->guest pushes worked,
+# and a 1.5 MB GET went from 0 bytes to a full transfer once mtu <= 1450. It was read
+# then as the emulated A2065 dropping full ~1500-byte frames on TX.
+#
+# That is not reproduced guest to guest on the Amiberry of 2026-11-05, with two guests
+# on bridged taps at 1500: ftp of 8.4 MB each way at a mean of ~1507 bytes per frame,
+# and NFS 8 KiB reads and writes of 16-24 MiB, completed with no stall. With those
+# taps at 1400, pings of 1400 data bytes and up between the guests got no reply, and
+# an 8 KiB soft-mount NFS read failed with `Bad address`.
+#
+# Not measured yet: guest to host above 1400, this LAN tap above 1400, which Amiberry
+# commit changed the behaviour, and real hardware. So the default stays until then.
+# On the guest, `ifconfig aen0 mtu 1400` is refused (`mtu: bad value`); other forms
+# of that command are untested.
 ip link set "$TAP" mtu "${TAP_MTU:-1400}"
 ip addr replace "$TAP_ANCHOR/32" dev "$TAP"
 

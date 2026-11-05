@@ -39,8 +39,9 @@ ip link set "$TAP" up
 # and a 1.5 MB GET went from 0 bytes to a full transfer once mtu <= 1450. It was read
 # then as the emulated A2065 dropping full ~1500-byte frames on TX.
 #
-# That is not reproduced guest to guest on the Amiberry of 2026-11-05, with two guests
-# on bridged taps at 1500: ftp of 8.4 MB each way at a mean of ~1507 bytes per frame,
+# That is not reproduced guest to guest on 2026-11-05 on Amiberry 1621e26 (on branch
+# amix-v842 of the amiberry fork), with two guests on bridged taps at 1500: ftp of
+# 8.4 MB each way at a mean of ~1507 bytes per frame,
 # and NFS 8 KiB reads and writes of 16-24 MiB, completed with no stall. With those
 # taps at 1400, pings of 1400 data bytes and up between the guests got no reply, and
 # an 8 KiB soft-mount NFS read failed with `Bad address`.

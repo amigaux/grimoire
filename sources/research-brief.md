@@ -701,3 +701,8 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   capture). The first soft-mount NFS write of a measurement failed twice, once at each MTU, unexplained 🟡.
   TCP guest to host at MSS 1460, single frames above 1400 from host to guest, the LAN tap above 1400, the
   Amiberry commit that changed it and real hardware 🔴 (not run). `ifconfig aen0 mtu 1400` is refused ✅.
+- **2026-11-05 — Amiberry IPC socket per instance.** Amiberry's IPC code (`src/osdep/amiberry_ipc_socket.cpp`,
+  upstream master, v8.3.0 and later) gives the first instance `$XDG_RUNTIME_DIR/amiberry.sock` (`/tmp` when unset)
+  and later ones `amiberry_1.sock` to `amiberry_9.sock` ✅. With several emulators running, a tool that defaults
+  to the plain name reaches the first one started; a shot and typed keys went to another emulator that way 🟡.
+  `tools/amishot.sh` now takes `--socket` or `AMIBERRY_SOCK` with no default (tested against a fake socket) ✅.

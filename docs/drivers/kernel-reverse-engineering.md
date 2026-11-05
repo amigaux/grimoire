@@ -92,8 +92,11 @@ Amiberry's `SAVESTATE` verb takes **two** arguments — a statefile *and* a conf
 
 ```sh
 printf 'SAVESTATE\t/tmp/x.uss\t/tmp/x.cfg\n' \
-  | socat - UNIX-CONNECT:/run/user/<uid>/amiberry.sock
+  | socat - UNIX-CONNECT:"$AMIBERRY_SOCK"
 ```
+
+`$AMIBERRY_SOCK` stands for that emulator's own IPC socket. With several Amiberry instances running, the plain
+`amiberry.sock` is the first one's ([which socket is which](../getting-started/emulation-amiberry.md#screenshot-via-the-ipc-socket-wayland-proof)).
 
 It works even at a kernel **panic screen**, so you can snapshot a wedged kernel and read *why* it wedged ✅.
 

@@ -22,7 +22,7 @@ These came out of the [A4091 / 53C710 driver](../docs/drivers/a4091-53c710-drive
 | [`build-clean-kernel.sh`](build-clean-kernel.sh) | Relink the Amix kernel **until the `sum` checksum recurs** — dodges the intermittent (~70%) `ld` write-corruption (the ["D245 boot-breaker"](../docs/drivers/kernel-build.md)) by exploiting that a clean `ld` output is byte-deterministic. Runs **on the Amix box**. | ✅ first-party |
 | [`checkunix.c`](checkunix.c) | Native big-endian symtab integrity check for a kernel ELF (flags the out-of-range `st_shndx` that the D245 corruption produces). `cc -O -o checkunix checkunix.c`. | ✅ first-party |
 | [`relsim.py`](relsim.py) | Host-side reimplementation of the boot relocator `rel()` — the full offline D245 oracle (symtab **and** relocation records): `python3 tools/relsim.py relocunix`. | ✅ first-party |
-| [`amishot.sh`](amishot.sh) | Screenshot the running Amiberry's framebuffer via its IPC socket (`SCREENSHOT\t<path>` → `amiberry.sock`) — works under Wayland where `grim`/`gnome-screenshot` are blocked. See [headless Amiberry](../docs/getting-started/emulation-amiberry.md). | ✅ first-party |
+| [`amishot.sh`](amishot.sh) | Screenshot an Amiberry's framebuffer via its IPC socket (`SCREENSHOT\t<path>`), named with `--socket` or `AMIBERRY_SOCK`; no default, since a second emulator takes `amiberry_1.sock` — works under Wayland where `grim`/`gnome-screenshot` are blocked. See [headless Amiberry](../docs/getting-started/emulation-amiberry.md). | ✅ first-party |
 | [`host-net/amixsync.py`](host-net/amixsync.py) | Laptop↔Amix file bridge over **FTP** (push/pull; Amix is NFSv2-only). Companion to `host-net/amixsh.py` / `amixput.py`. | ✅ first-party |
 
 ## Quick start

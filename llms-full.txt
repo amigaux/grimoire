@@ -7753,12 +7753,21 @@ render the shot through its **IPC socket** — this works regardless of display 
 protocol command to the socket: ✅
 
 ```sh
-tools/amishot.sh /tmp/shots/amix.png      # -> "OK  /tmp/shots/amix.png"
+tools/amishot.sh --socket "$XDG_RUNTIME_DIR/amiberry.sock" /tmp/shots/amix.png   # -> "OK  /tmp/shots/amix.png"
 ```
 
-It connects to **`/run/user/<uid>/amiberry.sock`** and sends `SCREENSHOT\t<abspath>\n` (tab-separated,
-absolute path); Amiberry replies `OK\t<path>` or `ERROR\t<msg>`. The path must be absolute — the wrapper
-absolutises a relative argument and `mkdir -p`s its directory before sending.
+It connects to the socket you name, with `--socket` or `AMIBERRY_SOCK`, and sends `SCREENSHOT\t<abspath>\n`
+(tab-separated, absolute path); Amiberry replies `OK\t<path>` or `ERROR\t<msg>`. The path must be absolute — the
+wrapper absolutises a relative argument and `mkdir -p`s its directory before sending. It exits 0 on `OK`, 1 on
+an error reply or no connection, and 2 when no socket is named.
+
+**Which socket is which.** The first Amiberry to start listens on `$XDG_RUNTIME_DIR/amiberry.sock`
+(`/tmp/amiberry.sock` when that variable is unset), and each later one takes the next free name,
+`amiberry_1.sock` up to `amiberry_9.sock` ✅. So with more than one emulator running, the plain name belongs to
+whichever started first, not to the one you mean. Anything sent there, a screenshot, a snapshot or typed keys,
+goes to that emulator. `amishot.sh` therefore has no default socket: give each emulator's socket explicitly,
+and when you start several, note which name each one took (Amiberry prints `IPC: Default socket in use, using
+instance <n>` when it falls back, unless its IPC logging is off).
 
 ## See also
 - [`tools/amix-amiberry.uae`](https://github.com/Jusii/grimoire-amix/blob/master/tools/amix-amiberry.uae) — a complete, ready-to-edit working Amiberry config (A3000 / KS 2.04 / 68030+MMU / SCSI disk@6 + tape@4 / A2065).
@@ -7770,6 +7779,7 @@ absolutises a relative argument and `mkdir -p`s its directory before sending.
 - [The A4091 / 53C710 SCSI driver](../drivers/a4091-53c710-driver.md) — the native driver that makes the emulated A4091 usable (and bootable) under Amix.
 
 ## Sources
+- IPC socket naming: Amiberry's `src/osdep/amiberry_ipc_socket.cpp` (`get_socket_path()`, `OpenListener()`), read in upstream [BlitterStudio/amiberry](https://github.com/BlitterStudio/amiberry) `master` and present in v8.3.0 and later, 2026-11-05 ✅. A shot or typed keys reaching another emulator through the plain socket name: first-party record, 2026-11-05 🟡.
 - The `cpu_type=68020` override: first-party record, 2026-10-30 (the k30 kernel work's no-FPU emulator runs: `AttnFlags` `0003` and a reset loop after `starting the kernel`, against `0007` with `cpu_model=68030`, `mmu_model=68030`, `fpu_model=0`) ✅.
 - The retired sole-A4091 CD gotcha and the A4091-root-on-A3000 config: first-party record, 2026-09-29 (a CD at `0,3` mounted with a card-0 A4091 on an ECS rig; on an A3000 the WD33C93 is card 0 and the A4091 card 1) 🟡.
 - The **2026-09-29 stock-kernel RAM-layout measurement** ✅ — on the emulated bench the same 64 MB A3000 motherboard bank boots a kernel that probes for the A3000 SCSI and stops the pinned stock kernel at `s5mountroot VOP_OPEN error 6` (no card 0), symbolised against the stock `autocon()` load-address guess (first-party record, 2026-09-29; [quirks §57](../how-it-works/quirks.md#57-loader-placement-a3000-scsi)).
@@ -10575,8 +10585,11 @@ Amiberry's `SAVESTATE` verb takes **two** arguments — a statefile *and* a conf
 
 ```sh
 printf 'SAVESTATE\t/tmp/x.uss\t/tmp/x.cfg\n' \
-  | socat - UNIX-CONNECT:/run/user/<uid>/amiberry.sock
+  | socat - UNIX-CONNECT:"$AMIBERRY_SOCK"
 ```
+
+`$AMIBERRY_SOCK` stands for that emulator's own IPC socket. With several Amiberry instances running, the plain
+`amiberry.sock` is the first one's ([which socket is which](../getting-started/emulation-amiberry.md#screenshot-via-the-ipc-socket-wayland-proof)).
 
 It works even at a kernel **panic screen**, so you can snapshot a wedged kernel and read *why* it wedged ✅.
 

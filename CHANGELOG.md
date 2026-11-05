@@ -2,6 +2,12 @@
 
 Started 2026-09-26.
 
+## 2026-11-05 — amix-lan-up.sh's tap MTU comment; amishot.sh names its socket (75417d7, 4903f59, 32b2a04, 498c8c5)
+
+amix-lan-up.sh: the tap MTU comment no longer says the emulated A2065 drops full frames. That was seen in June on an earlier Amiberry and is not reproduced guest to guest, and a full-size ICMP echo reaches the host. TCP guest to host at MSS 1460, host-to-guest frames above 1400, the LAN tap and real hardware are not measured, so the 1400 default stays.
+
+tools/amishot.sh no longer defaults to amiberry.sock. Name the emulator's socket with --socket or AMIBERRY_SOCK. Amiberry gives a second instance amiberry_1.sock and so on, so the plain name reaches whichever emulator started first. It exits 0 on OK, 1 on an error reply or no connection, and 2 when no socket is named. The Amiberry page explains which socket is which.
+
 ## 2026-11-05 — amixsh.py refuses long lines and can't be fooled by marker text; quirks 12, 39, 99 (62e451e, a1a88da, e789077)
 
 amixsh.py: a line over 237 bytes is refused before login (exit 2); the end marker is now DONE_<status>_<nonce> on its own line, so text in a command or its output can't give a false 0 and a trailing & runs; a missing marker stops the batch with exit 124 and a message; AMIX_TIMEOUT sets the wait per command. New test-amixsh.py runs against a fake shell; checked on a 68030 guest.

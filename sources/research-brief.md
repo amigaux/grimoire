@@ -696,5 +696,8 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   telnet login ended, and with `nohup` it did ✅, a hang-up being the likely cause 🟡.
 - 2026-11-05 — A2065 frame size under Amiberry: the June stall on frames near 1500 bytes is not reproduced
   guest to guest ✅ (first-party, Amiberry `1621e26`, on `amix-v842`: two guests, k46 with k46 and k30 with k46, on bridged taps at 1500; ftp
-  and NFS completed, card error counters 0). Guest to host above 1400, the LAN tap above 1400, the
+  and NFS completed, card error counters 0). Guest to host, a full-size ICMP echo got replies with a tap
+  at 1400 ✅ (3 packets); that a tap's MTU limits only frames going out to the guest 🟡 (inferred, no
+  capture). The first soft-mount NFS write of a measurement failed twice, once at each MTU, unexplained 🟡.
+  TCP guest to host at MSS 1460, single frames above 1400 from host to guest, the LAN tap above 1400, the
   Amiberry commit that changed it and real hardware 🔴 (not run). `ifconfig aen0 mtu 1400` is refused ✅.

@@ -44,10 +44,17 @@ ip link set "$TAP" up
 # 8.4 MB each way at a mean of ~1507 bytes per frame,
 # and NFS 8 KiB reads and writes of 16-24 MiB, completed with no stall. With those
 # taps at 1400, pings of 1400 data bytes and up between the guests got no reply, and
-# an 8 KiB soft-mount NFS read failed with `Bad address`.
+# an 8 KiB soft-mount NFS read failed with `Bad address`. The first soft-mount write
+# of a measurement failed twice, once at each MTU, unexplained; 8 later writes did not.
 #
-# Not measured yet: guest to host above 1400, this LAN tap above 1400, which Amiberry
-# commit changed the behaviour, and real hardware. So the default stays until then.
+# Guest to host, a full-size ICMP echo (1472 data bytes, 3 packets) got replies even
+# with a tap at 1400, so the guest's full frame reached the host. The likely reason,
+# inferred with no capture, is that a tap's MTU limits frames going out to the guest,
+# not what the guest writes in.
+#
+# Not measured yet: TCP guest to host at MSS 1460, single frames above 1400 from host
+# to guest, this LAN tap above 1400, which Amiberry commit changed the behaviour, and
+# real hardware. So the default stays until then.
 # On the guest, `ifconfig aen0 mtu 1400` is refused (`mtu: bad value`); other forms
 # of that command are untested.
 ip link set "$TAP" mtu "${TAP_MTU:-1400}"

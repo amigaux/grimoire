@@ -2,6 +2,10 @@
 
 Started 2026-09-26.
 
+## 2026-11-11 — the grimoire moved to amigaux/grimoire, served at https://grimoire.amigaux.org/ (f41baa6)
+
+mkdocs.yml has the new site_url, repo_url and repo_name; every self-link in docs/ and llms-full.txt points to github.com/amigaux/grimoire (216 links in 39 files).
+
 ## 2026-11-05 — amix-lan-up.sh's tap MTU comment; amishot.sh names its socket (75417d7, 4903f59, 32b2a04, 498c8c5)
 
 amix-lan-up.sh: the tap MTU comment no longer says the emulated A2065 drops full frames. That was seen in June on an earlier Amiberry and is not reproduced guest to guest, and a full-size ICMP echo reaches the host. TCP guest to host at MSS 1460, host-to-guest frames above 1400, the LAN tap and real hardware are not measured, so the 1400 default stays.

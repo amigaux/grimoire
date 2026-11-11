@@ -3,9 +3,9 @@ site_description: >-
   Developer- and LLM-oriented documentation for Amiga Unix (Amix) — Commodore's
   port of AT&T System V Release 4 (SVR4) to 68030 Amigas.
 docs_dir: docs
-site_url: https://jusii.github.io/grimoire-amix/
-repo_url: https://github.com/Jusii/grimoire-amix
-repo_name: Jusii/grimoire-amix
+site_url: https://grimoire.amigaux.org/
+repo_url: https://github.com/amigaux/grimoire
+repo_name: amigaux/grimoire
 
 theme:
   name: material

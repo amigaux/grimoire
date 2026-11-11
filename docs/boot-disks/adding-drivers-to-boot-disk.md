@@ -137,7 +137,7 @@ Three rules ✅:
 1. **Always clean-gate the build** — relink until the kernel checksum recurs, which proves a clean
    `ld` output, before you install it. See the
    [D245 boot-breaker and the build-until-stable clean-gate](../drivers/kernel-build.md) on the
-   kernel-build page (and [`tools/build-clean-kernel.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/build-clean-kernel.sh)).
+   kernel-build page (and [`tools/build-clean-kernel.sh`](https://github.com/amigaux/grimoire/blob/master/tools/build-clean-kernel.sh)).
 2. **Keep a backup HDF** of your working disk before any boot-partition write — recovery is a file
    copy, not a reinstall.
 3. **Install onto a throwaway / clone disk**, not your daily driver — use the by-hand `c8d0s3`
@@ -157,7 +157,7 @@ The boot floppy is no longer a black box. From the [reverse-engineering writeup]
 
 A custom bootable floppy is: **donor bootblock+bootstrap + your `compress`'d kernel + zero pad**, with
 the bootstrap's **`IBLK` descriptor** (`0x2600`: compressed length, decompressed size, checksum)
-rewritten to describe *your* stream. [`tools/build-bootfloppy.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/build-bootfloppy.sh) does
+rewritten to describe *your* stream. [`tools/build-bootfloppy.sh`](https://github.com/amigaux/grimoire/blob/master/tools/build-bootfloppy.sh) does
 all of that (and self-tests via the descriptor):
 
 ```sh
@@ -210,7 +210,7 @@ uncompress -f /var/patch/*.Z
 exec /var/patch/apply
 ```
 
-Build one with [`tools/build-custom-bootdisk.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/build-custom-bootdisk.sh):
+Build one with [`tools/build-custom-bootdisk.sh`](https://github.com/amigaux/grimoire/blob/master/tools/build-custom-bootdisk.sh):
 
 ```sh
 tools/build-custom-bootdisk.sh --payload ./payload --out my-driver-addon.adf --install var/addon/install
@@ -273,7 +273,7 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   (`e_type=0x1`) instead Guru's `D245 4C41` at relocation. From `amix-kerntools/tools/elf2brel.py` (port of
   `amiga/boot/elf2brel.c`).
 - [Reverse-Engineering the Boot Floppy](reverse-engineering-boot-adf.md) and research brief §3, §10, §13
-  ([`../../sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md)): the `compress`/LZW kernel at
+  ([`../../sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md)): the `compress`/LZW kernel at
   `0x2800` → m68k ELF, the 16-bit folded **non-fatal** checksum (bootstrap disassembly), and the
   host-verified round-trip via `tools/extract-kernel.sh` + `tools/build-bootfloppy.sh`.
 - Kernel relink flow (`/usr/sys` → `make force` / `relocunix` → `make bootpart`; keep old `/unix`) —
@@ -287,10 +287,10 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   the working disk; a corrupt boot-partition write bricks that disk); the stock `/usr/sys` and
   `/stand` install flow on the [kernel-build page](../drivers/kernel-build.md#make-install-does-not-update-standunix-copy-it-yourself);
   reproduced locally on Amix 2.1c (first-party record, 2026-06-04) ✅;
-  [`tools/build-clean-kernel.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/build-clean-kernel.sh)
+  [`tools/build-clean-kernel.sh`](https://github.com/amigaux/grimoire/blob/master/tools/build-clean-kernel.sh)
   is the clean-gate that proves a kernel safe to install.
 - Patch-disk self-extraction model — `amix_21_patch.adf` analysis; research brief §10;
-  [`tools/build-custom-bootdisk.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/build-custom-bootdisk.sh).
+  [`tools/build-custom-bootdisk.sh`](https://github.com/amigaux/grimoire/blob/master/tools/build-custom-bootdisk.sh).
 - VA2000 / Hydra driver-install procedures — research brief §6; repos
   [`github.com/asokero/va2000-amix`](https://github.com/asokero/va2000-amix),
   [`github.com/isoriano1968/hydra-amix`](https://github.com/isoriano1968/hydra-amix).

@@ -8,7 +8,7 @@ status: draft
 
 Amix builds software two ways. **On the box**: the bundled AT&T SVR4 `cc` (the kernel's reference compiler) or the stock Commodore-patched **GNU GCC 1.40.5** at `/usr/public/bin/gcc` ✅, with GNU `make` and GAS, then relink `/unix` ✅ (a native **GCC 2.7.2.3** exists on some community boxes, but the "installable pkg from amigaunix.com" attribution is unsourced 🔴 — see [the compiler table](#native-compilers-on-the-box)) — this is how the existing drivers ([Hydra](case-studies/hydra.md), [VA2000](case-studies/va2000.md)) are built. **On Linux**: as of 2026-06 a public, reproducible *cross*-toolchain exists — [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix), a GCC 2.7.2.3 retargeted to `m68k-cbm-sysv4` — that compiles Amix userland binaries and kernel/driver objects on a modern host (you supply your own licensed Amix sysroot) ✅. Finished software is shipped as SVR4 packages built with `pkgproto`/`pkgmk`/`pkgtrans` and installed with `pkgadd` ✅; the large community bundle is **AmixBP**, with a `zoo`+`cpio` fallback ✅.
 
-Two important caveats colour everything below. The Amix `/bin/sh` is **pre-POSIX**, which breaks many modern build scripts ✅. And the cross-toolchain still needs a **user-supplied licensed Amix sysroot** (the toolchain repo ships no Amix headers/libs/startup objects; until 2026-09-23 this project treated them as not redistributable — see [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary) for the outcome that lifted that), and its **C++/`g++` support is not finished yet** 🟡 — C is fully working.
+Two important caveats colour everything below. The Amix `/bin/sh` is **pre-POSIX**, which breaks many modern build scripts ✅. And the cross-toolchain still needs a **user-supplied licensed Amix sysroot** (the toolchain repo ships no Amix headers/libs/startup objects; until 2026-09-23 this project treated them as not redistributable — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary) for the outcome that lifted that), and its **C++/`g++` support is not finished yet** 🟡 — C is fully working.
 
 **Two cross compilers, two jobs (2026-10).** The amigaux project builds **kernel space** — kernels,
 drivers, boot loaders, [loadable modules](loadable-modules.md) — only with GCC 2.7.2.3
@@ -137,7 +137,7 @@ make test-random AMIX_ROOT=/path/to/usr-amix CPUFLAGS=-m68030
 #   -> build/test/random.o : ELF 32-bit MSB relocatable M68000  (resembles native AMIX driver objects)
 ```
 
-The wrapper compiles via `-S` → an `.lcomm` assembly fix-up → `as -m68020`, working around quirks of the old GCC's output ✅. So you can now develop a driver (e.g. the [A4091](a4091-53c710-driver.md) or a new NIC) on a modern host and do only the final relink on Amix — though the native on-box build (above) remains the simplest path for a single driver. This was open gap #1 in §13 of the [research brief](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md), now closed.
+The wrapper compiles via `-S` → an `.lcomm` assembly fix-up → `as -m68020`, working around quirks of the old GCC's output ✅. So you can now develop a driver (e.g. the [A4091](a4091-53c710-driver.md) or a new NIC) on a modern host and do only the final relink on Amix — though the native on-box build (above) remains the simplest path for a single driver. This was open gap #1 in §13 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md), now closed.
 
 **68060 targets.** GCC 2.7.2.3 has no `-m68060`; compile code for a 68060 with `-m68040` ✅. At
 every optimisation level and `-m680x0` flag it emits the 64-bit `mulu.l`/`muls.l` form, which the
@@ -673,7 +673,7 @@ pkgadd -d /tmp/MYpkg.pkg MYpkg
 
 ### How the installer itself uses packaging
 
-The Amix install path is package-driven ✅. The `root.adf` install scripts wrap the pkg machinery with **`amixpkg`** (e.g. `amixpkg -i -m -d -r /mnt -y standard`) and stream the distribution from tape (`dd if=/dev/rmt/4hn bs=256k | cpio -imdcu`) ✅. The `amixpkg` wrapper is widely reported to be flaky/"broken" 🟡, but the underlying `pkgadd`/`pkgmk`/`pkgtrans` tools are the standard SVR4 ones. The installation flow is detailed in §9 of the [research brief](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md); see also the [installation walkthrough](../getting-started/install-walkthrough.md).
+The Amix install path is package-driven ✅. The `root.adf` install scripts wrap the pkg machinery with **`amixpkg`** (e.g. `amixpkg -i -m -d -r /mnt -y standard`) and stream the distribution from tape (`dd if=/dev/rmt/4hn bs=256k | cpio -imdcu`) ✅. The `amixpkg` wrapper is widely reported to be flaky/"broken" 🟡, but the underlying `pkgadd`/`pkgmk`/`pkgtrans` tools are the standard SVR4 ones. The installation flow is detailed in §9 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md); see also the [installation walkthrough](../getting-started/install-walkthrough.md).
 
 ### AmixBP and the zoo+cpio fallback
 
@@ -711,7 +711,7 @@ The patch disk uses a related (but distinct) self-extracting mechanism — a 1 K
 ## Sources
 - The **`AF_UNIX` `chmod` trap** (first-party record, 2026-10-30) ✅ — see the matching Sources entry on [the networking page](../how-it-works/networking.md#af-unix-socket-path).
 - amix-kerntools brief `tdivs-cross-assembler-miscompile` (2026-07-21): gcc-cross-amix `984192a` fix_asm rewrite + test-divmod; on-box measurements; metal confirmation 2026-07-21.
-- [research brief](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) §7 (Toolchain & packaging), §6 (modern driver repos — Hydra **native** build, GCC 2.7.2.3 — the brief's "from amigaunix.com" attribution is 🔴, unsourced), §11 (userland shells), and §13 (open gaps #1, #3).
+- [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §7 (Toolchain & packaging), §6 (modern driver repos — Hydra **native** build, GCC 2.7.2.3 — the brief's "from amigaunix.com" attribution is 🔴, unsourced), §11 (userland shells), and §13 (open gaps #1, #3).
 - Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference (kernel build flow; `rdbunix` historical name).
 - The **stock native compiler**, measured on a stock Amix 2.1 install (2026-09-15/16) ✅: `gcc --version` prints `GNU GCC version 1.40.5 (68k, SGS/AT&T syntax)` (`/usr/public/bin/gcc`, `/usr/sys/Makefile` `CC = gcc`); it alone has `-fpcrel` and it rejects `-fno-builtin`. No copy of a native GCC 2.7.2.3 package or source for the "amigaunix.com pkg" attribution has been found — hence 🔴 on that attribution.
 - `isoriano1968/hydra-amix` repo (the **native** `make` / `make force` build, `CFLAGS="-O -D_KERNEL -DSVR40 -DSVR4"`, `elf2brel` in `boot/`, native GCC 2.7.2.3 — origin unsourced 🔴, not an amigaunix.com pkg as far as any source shows): <https://github.com/isoriano1968/hydra-amix>

@@ -195,7 +195,7 @@ DISPLAY=:77 import -window root /tmp/amix.png
 Under Wayland/GNOME the usual capture tools (`grim`, `gnome-screenshot`, the Shell D-Bus screenshot API)
 are blocked, so `import -window root` is not available outside an X server. Instead ask Amiberry itself to
 render the shot through its **IPC socket** — this works regardless of display server.
-[`tools/amishot.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/amishot.sh) sends the
+[`tools/amishot.sh`](https://github.com/amigaux/grimoire/blob/master/tools/amishot.sh) sends the
 protocol command to the socket: ✅
 
 ```sh
@@ -216,7 +216,7 @@ and when you start several, note which name each one took (Amiberry prints `IPC:
 instance <n>` when it falls back, unless its IPC logging is off).
 
 ## See also
-- [`tools/amix-amiberry.uae`](https://github.com/Jusii/grimoire-amix/blob/master/tools/amix-amiberry.uae) — a complete, ready-to-edit working Amiberry config (A3000 / KS 2.04 / 68030+MMU / SCSI disk@6 + tape@4 / A2065).
+- [`tools/amix-amiberry.uae`](https://github.com/amigaux/grimoire/blob/master/tools/amix-amiberry.uae) — a complete, ready-to-edit working Amiberry config (A3000 / KS 2.04 / 68030+MMU / SCSI disk@6 + tape@4 / A2065).
 - [Install walkthrough](install-walkthrough.md) — the end-to-end tape install (works on Amiberry 8.x, WinUAE, and FS-UAE).
 - [Amix on WinUAE](emulation-winuae.md) / [Amix on FS-UAE](emulation-fs-uae.md) — the other UAE-family targets.
 - [Hardware & requirements](../how-it-works/hardware.md) — why the SCSI IDs are fixed, and the RAM envelope per kernel.
@@ -234,7 +234,7 @@ instance <n>` when it falls back, unless its IPC logging is off).
 - The amigaux 1.0 emulator requirement (Amiberry 8.3.0 or newer; older versions corrupt data under paging) — Installer-NG (not public) `docs/public-classic-README.txt` and the [amigaux.org emulator install page](https://amigaux.org/install/emulator/); the 1.0 configs were accepted on stock Amiberry v8.3.0 (`docs/releases/1.0.md`, "Emulator acceptance (Amiberry)").
 - Research brief §2 (tape ID 4 hard-coded; disk ID 6 by convention) and §9 (`dd … /dev/rmt/4hn | cpio` install flow).
 - [BlitterStudio/amiberry](https://github.com/BlitterStudio/amiberry) project repository.
-- The A4091-on-Amix project, [`jusii/amix-a4091`](https://github.com/jusii/amix-a4091) — its `README.md` (Amiberry-proven on A3000/ECS and A4000/AGA profiles; `amix-a4091-boot-aga.uae` with a Kickstart 3.0 A4000 ROM for root on the A4091, `amix-dbg.uae` for the A3000 + A4091 case) and the sample configs at its root (`amix-a4091-boot.uae`, `amix-a4091-boot-aga.uae`, `amix-dbg.uae`), reproduced locally ✅; A4091 product id `0x02020054` verified in `src/a4091-blk.c`. The A3000(ECS)/A4000(AGA) Kickstart matrix, including the KS 2.04 white screen on AGA: first-party record, 2026-06-05 ✅. Screenshot wrapper: [`tools/amishot.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/amishot.sh).
+- The A4091-on-Amix project, [`jusii/amix-a4091`](https://github.com/jusii/amix-a4091) — its `README.md` (Amiberry-proven on A3000/ECS and A4000/AGA profiles; `amix-a4091-boot-aga.uae` with a Kickstart 3.0 A4000 ROM for root on the A4091, `amix-dbg.uae` for the A3000 + A4091 case) and the sample configs at its root (`amix-a4091-boot.uae`, `amix-a4091-boot-aga.uae`, `amix-dbg.uae`), reproduced locally ✅; A4091 product id `0x02020054` verified in `src/a4091-blk.c`. The A3000(ECS)/A4000(AGA) Kickstart matrix, including the KS 2.04 white screen on AGA: first-party record, 2026-06-05 ✅. Screenshot wrapper: [`tools/amishot.sh`](https://github.com/amigaux/grimoire/blob/master/tools/amishot.sh).
 - [A4091/a4091-software](https://github.com/A4091/a4091-software) — the A4091 autoboot ROM (`amiga-boot-a4091.rom`) and the `ncr53cxxx` SCRIPTS assembler.
 - The **Installer-NG** blank-disk→bootable-install work (the installer not public; [`jusii/amix-packagemanager`](https://github.com/jusii/amix-packagemanager); first-party record, 2026-07-22/24), on Amiberry and a real A4000+Z3660 (install-run captures, s5/UFS state reads, and the on-metal digest attestation) ✅ (🟡 where tagged).
 - A first-party source read of upstream

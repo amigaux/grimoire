@@ -13,7 +13,7 @@ sources** (amigaunix.com, encyclopedias, blogs, Usenet, emulator issue trackers,
 docs). Every `docs/` page ends with its own `## Sources` list citing the specific items below; this
 page is where those citations resolve.
 
-The hierarchy we apply everywhere, per the [contributor contract](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md): **primary manuals
+The hierarchy we apply everywhere, per the [contributor contract](https://github.com/amigaux/grimoire/blob/master/AGENTS.md): **primary manuals
 / the Ditto driver paper / the real disk images and repo source > archived Usenet
 (comp.unix.amiga) > forum lore.** Confidence tags (✅ verified, 🟡 community-reported,
 🔴 unverified/disputed) are carried from the research brief into every page; this page is mostly a
@@ -23,7 +23,7 @@ catalogue, so it is lightly tagged.
 floppy images, the hardfiles, tape images, and the scanned manuals are **Commodore material**. On
 2026-09-23, following the approval of Mike Battilana (CEO, Amiga Corporation — Saku event 2026-09-19,
 email 2026-09-23), the Amix release restriction is lifted: the Commodore Amiga
-binaries may be distributed and Amiga UNIX released to the public ([`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary)).
+binaries may be distributed and Amiga UNIX released to the public ([`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary)).
 *History:* until 2026-09-23 this project treated them as abandonware, not licensed for
 redistribution. We still never commit them to this repository (they are `.gitignore`d; it is a text
 knowledge hub). We refer to them by name and
@@ -264,7 +264,7 @@ so a reader (human or agent) can resolve and reproduce them:
 - [Driver model](../drivers/driver-model.md) — the page the Ditto paper most directly grounds.
 - [Boot-disk anatomy: boot.adf](../boot-disks/anatomy-boot-adf.md) — where the local image analysis lands.
 - [Writing for LLMs](../contributing/writing-for-llms.md) — the `llms.txt` convention in practice.
-- [AGENTS.md](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md) — the grounding, tagging, and licensing contract that this list serves.
+- [AGENTS.md](https://github.com/amigaux/grimoire/blob/master/AGENTS.md) — the grounding, tagging, and licensing contract that this list serves.
 
 ## Sources
 - `amigaux/amix-system` (2026-10-31) ✅: the GitHub API (public, default branch `master`) and the repository @ `7cba961` `README.md` (layout).

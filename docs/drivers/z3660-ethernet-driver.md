@@ -18,7 +18,7 @@ The work is **first-party and reproduced on real hardware** — written, built, 
 physical **Amiga 4000 + Z3660** during 2026-06. Unless noted, every claim here is **✅ Verified**
 (driver source we wrote, firmware source we read, or a result reproduced live on the hardware);
 inferences and unconfirmed items are tagged 🟡 inline, carried verbatim from the source brief per the
-repo's [confidence-tag policy](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md). The
+repo's [confidence-tag policy](https://github.com/amigaux/grimoire/blob/master/AGENTS.md). The
 source is the **amix-z3660net** project — `src/z3660eth.{c,h}`, `driver.conf`, `userland/S99zen`,
 its `docs/ETHERNET-SCOPING.md` — and the Z3660 firmware source.
 

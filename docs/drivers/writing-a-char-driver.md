@@ -10,7 +10,7 @@ The canonical Amix character driver is **`par.c`**, the Amiga parallel-port driv
 
 This page is **uniformly ✅** (primary source: the Ditto paper, pp. 8–22) except where a tag says otherwise. For the conceptual model behind switch tables and major/minor numbers, read [the Amix device-driver model](driver-model.md) first; for how `par.c` gets linked into a kernel, see [building and installing a kernel](kernel-build.md). For a *modern* character driver that also implements `mmap`, jump to [the VA2000 framebuffer case study](case-studies/va2000.md).
 
-> **Licensing note.** `par.c` is reproduced and quoted here only in short excerpts for documentation, from the publicly circulated Ditto paper. The full driver listing is in that paper; the Amix distribution itself ships the stock driver sources under `/usr/sys`. This repo does not redistribute the disk images or the PDF (the 2026-09-23 lifting of the Amix release restriction, [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary), does not change that) — point readers to [amigaunix.com](https://www.amigaunix.com/doku.php/home) and archive.org instead.
+> **Licensing note.** `par.c` is reproduced and quoted here only in short excerpts for documentation, from the publicly circulated Ditto paper. The full driver listing is in that paper; the Amix distribution itself ships the stock driver sources under `/usr/sys`. This repo does not redistribute the disk images or the PDF (the 2026-09-23 lifting of the Amix release restriction, [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary), does not change that) — point readers to [amigaunix.com](https://www.amigaunix.com/doku.php/home) and archive.org instead.
 
 ## What par.c does
 
@@ -464,6 +464,6 @@ Read the full mechanics — kernel-file patches, the `make install` / `make boot
 ## Sources
 
 - Ditto, Michael. *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference — pp. 8–22: the line-by-line driver narrative (pp. 8–12), the full `par.c` listing (pp. 13–19, lines 1–317), the references (pp. 20–21), and the `par(7A)` man page (p. 22). All code excerpts on this page are quoted from that listing.
-- [`sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) §5 (device-driver model; the `par.c` worked example as the canonical char-driver teaching case) and §6 (VA2000 modern char/`mmap` driver facts).
+- [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §5 (device-driver model; the `par.c` worked example as the canonical char-driver teaching case) and §6 (VA2000 modern char/`mmap` driver facts).
 - `asokero/va2000-amix` repo (char major 68, `/dev/va2000`, `mmap`, `autocon()`/`uiomove()`/`copyin`/`copyout`): <https://github.com/asokero/va2000-amix>
 - amigaunix.com — historical and end-user reference for Amix and its media: <https://www.amigaunix.com/doku.php/home>

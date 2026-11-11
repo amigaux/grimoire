@@ -21,7 +21,7 @@ The result, with the **example values** used throughout. They are documentation 
 It builds on the conceptual [networking page](../how-it-works/networking.md) (the SVR4 STREAMS stack, `aen0`, static-IP/no-DHCP, DNS-off-by-default) and [the Amiberry page](emulation-amiberry.md): **Amiberry 8.x fully runs and installs Amix** — its A3000 on-board SCSI emulates the disk (ID 6) and tape (ID 4) — and adds real A2065 networking. ✅
 
 > Substitute your own IP/gateway/DNS throughout. The host-side helpers in
-> [`tools/host-net/`](https://github.com/Jusii/grimoire-amix/tree/master/tools/host-net/) default to exactly these values and
+> [`tools/host-net/`](https://github.com/amigaux/grimoire/tree/master/tools/host-net/) default to exactly these values and
 > autodetect your LAN interface.
 
 ## Why this works on Amiberry (and the design choice)
@@ -79,7 +79,7 @@ sudo iptables -I DOCKER-USER 1 -i $ETH -o tap0 -j ACCEPT
 ## Step 2 — Amiberry config
 
 In your machine's `.uae` (a complete working example is committed at
-[`tools/amix-amiberry.uae`](https://github.com/Jusii/grimoire-amix/blob/master/tools/amix-amiberry.uae)), the networking lines are:
+[`tools/amix-amiberry.uae`](https://github.com/amigaux/grimoire/blob/master/tools/amix-amiberry.uae)), the networking lines are:
 
 ```ini
 a2065=tap0
@@ -279,15 +279,15 @@ Useful for automation / agents driving Amix without a visible window:
   with `xdotool windowfocus <id>` + `xdotool type/key`, screenshot with
   `import -window root`). ✅
 - Once `aen0` is up, skip the console entirely and use the LAN: scripted shell via
-  [`tools/host-net/amixsh.py`](https://github.com/Jusii/grimoire-amix/blob/master/tools/host-net/amixsh.py) (telnet) and file
-  uploads via [`amixput.py`](https://github.com/Jusii/grimoire-amix/blob/master/tools/host-net/amixput.py) (FTP). ✅
+  [`tools/host-net/amixsh.py`](https://github.com/amigaux/grimoire/blob/master/tools/host-net/amixsh.py) (telnet) and file
+  uploads via [`amixput.py`](https://github.com/amigaux/grimoire/blob/master/tools/host-net/amixput.py) (FTP). ✅
 
 ## See also
 
 - [Networking (concepts)](../how-it-works/networking.md) — the SVR4 STREAMS stack, `aen0`, DNS-off-by-default, the `route` metric.
 - [Z3660 ethernet driver case study](../drivers/z3660-ethernet-driver.md) — the **real-hardware** native-ethernet path: a physical A4000 + Z3660 as a LAN host over `zen0` (a native STREAMS/DLPI driver), as opposed to this page's emulated-A2065-on-a-host-TAP recipe. Same SVR4 boot-time bring-up files apply.
 - [Amix on Amiberry](emulation-amiberry.md) — install and run status, the A4091 and headless recipes.
-- [`tools/host-net/`](https://github.com/Jusii/grimoire-amix/tree/master/tools/host-net/) — the host scripts, systemd unit, and telnet/ftp helpers used here.
+- [`tools/host-net/`](https://github.com/amigaux/grimoire/tree/master/tools/host-net/) — the host scripts, systemd unit, and telnet/ftp helpers used here.
 - [Quirks](../how-it-works/quirks.md) — DNS-off, the `route` metric, the domain-append trap, and the **DNS-enable slow-boot** (literal-IP `ifconfig` fix).
 - [amigaunix.com — networking](https://www.amigaunix.com/doku.php/networking) — the community source that documents the `/etc/domain` "general weirdness".
 

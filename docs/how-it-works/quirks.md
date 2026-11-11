@@ -8,7 +8,7 @@ status: draft
 
 Amix is a "quick and dirty" 1990–1992 SVR4 port ✅, and it shows: the kernel hard-codes SCSI IDs and a fixed RAM-description arena, finds the A3000 SCSI by where the kernel was loaded, the bootstrap predates the 68040 and Zorro III, the stock `setclk` breaks in 2000, and the userland is pre-POSIX. This page is the **checklist of port-specific surprises** — the things that are technically correct, technically broken, or just unexpected, that cost people hours before they realize "it's just Amix."
 
-Each item is one line: what it is, the ✅/🟡 confidence tag carried from the [research brief](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) §12 (and §2/§9/§11, plus §17/§18 for the Z3660 driver-authoring items), and a cross-link to the page that covers it in depth.
+Each item is one line: what it is, the ✅/🟡 confidence tag carried from the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §12 (and §2/§9/§11, plus §17/§18 for the Z3660 driver-authoring items), and a cross-link to the page that covers it in depth.
 
 ## TL;DR checklist
 

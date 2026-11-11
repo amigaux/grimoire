@@ -15,7 +15,7 @@ script*: the header bootstraps itself, `dd`s past its own first kilobyte, pipes 
 (`archive.lha`) according to three list files.
 
 This page decodes that structure byte-for-byte (reproduced locally with
-[`tools/inspect-adf.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/inspect-adf.sh) and a small cpio walker), then explains the
+[`tools/inspect-adf.sh`](https://github.com/amigaux/grimoire/blob/master/tools/inspect-adf.sh) and a small cpio walker), then explains the
 `apply` + `lha` + list mechanism. It is the closest thing Amix has to a worked example of a custom
 add-on disk, so it doubles as the reference model for
 [adding your own drivers to a boot/patch disk](adding-drivers-to-boot-disk.md).
@@ -223,7 +223,7 @@ pattern together with the
 
 **Licensing.** `amix_21_patch.adf` is Commodore material; this repo does not ship it. Until
 2026-09-23 this project treated it as abandonware, not licensed for redistribution; since then the
-Amix release restriction is lifted — see [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary) ✅. Obtain it from [amigaunix.com](https://www.amigaunix.com/) or the
+Amix release restriction is lifted — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary) ✅. Obtain it from [amigaunix.com](https://www.amigaunix.com/) or the
 [archive.org Amix collection](https://archive.org/details/commodore-amiga-operating-systems-amix);
 verify against `sources/CHECKSUMS.txt`
 (`674f3ac691fd032c2c79c2fe90e2cd158e3f7d6004da03c4820373c50060fdfe`).
@@ -263,8 +263,8 @@ dd if=amix_21_patch.adf bs=1k skip=1 2>/dev/null | cpio -itv
 ## Sources
 
 - The **2026-09-29 Y2K correction** ✅ — `date 092912002026` accepted on a stock 2.1c box; the stock `setclk` boot run ending in `date: bad conversion`; the 103-member `archive.cpio` inside the patch disk's `archive.lha` carrying no `setclk` ([quirks §7](../how-it-works/quirks.md#7-y2k-setclk-and-the-kernels-1999-date-cap)).
-- `amix_21_patch.adf` analysis via [`tools/inspect-adf.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/inspect-adf.sh) and a `newc`-cpio header walk (offsets, modes, sizes reproduced locally), plus `lha l` of `archive.lha` and `cpio -it` of the `archive.cpio` inside it (one LHA member, 103 cpio members) — SHA-256 `674f3ac6…0060fdfe` in `sources/CHECKSUMS.txt`.
-- Master research brief, [§10 "Boot / root / patch disk anatomy"](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) and §1 version matrix (`^2\.1.* 08004..$` gate, 2.1p2a / kernel 2.1c).
+- `amix_21_patch.adf` analysis via [`tools/inspect-adf.sh`](https://github.com/amigaux/grimoire/blob/master/tools/inspect-adf.sh) and a `newc`-cpio header walk (offsets, modes, sizes reproduced locally), plus `lha l` of `archive.lha` and `cpio -it` of the `archive.cpio` inside it (one LHA member, 103 cpio members) — SHA-256 `674f3ac6…0060fdfe` in `sources/CHECKSUMS.txt`.
+- Master research brief, [§10 "Boot / root / patch disk anatomy"](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) and §1 version matrix (`^2\.1.* 08004..$` gate, 2.1p2a / kernel 2.1c).
 - The patch disk's own `replace.list`, `modify.list`, `delete.list` and `changes`, unpacked read-only, compared file by file with `/usr` read from a cleanly installed 2.1c system and with a pre-patch header set (the project's system-files inventory, first-party record, 2026-10-29) ✅; amix `system/README.md` (the patch disk holds no kernel) ✅.
 - Verbatim 1 KB header script captured from the image (`dd … bs=1 count=1024 | strings`).
 - amigaunix.com patch-disk page and the [archive.org Amix collection](https://archive.org/details/commodore-amiga-operating-systems-amix) (image provenance; not redistributed here).

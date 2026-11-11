@@ -109,6 +109,6 @@ build-host paths — read it as a personal layout, not a convention ✅.
 
 ## Sources
 
-- [`sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) §21 — `isoriano1968/mesa-amix` @ `78fe054` (2026-07-03).
+- [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §21 — `isoriano1968/mesa-amix` @ `78fe054` (2026-07-03).
 - [`isoriano1968/mesa-amix`](https://github.com/isoriano1968/mesa-amix) — `README.md`, `PORTING.md`, `install.sh` + `SOURCES.sha256`, `config/Make-config.amix`, `overlay/Mesa-3.1/amix-build.sh`.
 - [Mesa 3.x archive](https://archive.mesa3d.org/older-versions/3.x/) — the pristine upstream sources `install.sh` fetches.

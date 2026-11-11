@@ -21,10 +21,10 @@ is plain Markdown with stable headings, exact commands, and inline source-confid
 > **New here?** Read [What Amix Is](how-it-works/overview.md), then jump to
 > [Running Amix in WinUAE](getting-started/emulation-winuae.md) to get a system booting.
 >
-> **An AI agent?** Start from [`../llms.txt`](https://github.com/Jusii/grimoire-amix/blob/master/llms.txt) or the whole-corpus
-> [`../llms-full.txt`](https://github.com/Jusii/grimoire-amix/blob/master/llms-full.txt); the grounding facts live in
-> [`../sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md); the rules are in
-> [`../AGENTS.md`](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md).
+> **An AI agent?** Start from [`../llms.txt`](https://github.com/amigaux/grimoire/blob/master/llms.txt) or the whole-corpus
+> [`../llms-full.txt`](https://github.com/amigaux/grimoire/blob/master/llms-full.txt); the grounding facts live in
+> [`../sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md); the rules are in
+> [`../AGENTS.md`](https://github.com/amigaux/grimoire/blob/master/AGENTS.md).
 
 ## Reading paths
 
@@ -120,6 +120,6 @@ Case studies: [va2000](drivers/case-studies/va2000.md) ·
 [Writing for LLMs](contributing/writing-for-llms.md)
 
 ## Sources
-- [`../sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) (grounding synthesis with citations)
+- [`../sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) (grounding synthesis with citations)
 - [amigaunix.com](https://www.amigaunix.com/doku.php/home) (cross-linked community wiki)
 - [amigaux.org Install](https://amigaux.org/install/) (the amigaux 1.0 release: the Z3660 68060 routes and the classic 68030 kit)

@@ -61,7 +61,7 @@ For the full install sequence (boot floppy → root floppy miniroot → stream t
 
 ## Where to get the disk images
 
-The boot/root/patch floppies and the scanned manuals are **Commodore material**; this repo does not ship them. (Until 2026-09-23 this project treated them as abandonware; since then the Amix release restriction is lifted — see [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary).) Obtain `amix_2.1_boot.adf` (and the root and patch ADFs) from [amigaunix.com](https://www.amigaunix.com/doku.php/home) or the [Internet Archive Amix collection](https://archive.org/details/commodore-amiga-operating-systems-amix), and verify them against `sources/CHECKSUMS.txt`. The `a3000ux.hdf` system disk is a **blank RDB hardfile you create yourself**; the Amix installer partitions and formats it.
+The boot/root/patch floppies and the scanned manuals are **Commodore material**; this repo does not ship them. (Until 2026-09-23 this project treated them as abandonware; since then the Amix release restriction is lifted — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary).) Obtain `amix_2.1_boot.adf` (and the root and patch ADFs) from [amigaunix.com](https://www.amigaunix.com/doku.php/home) or the [Internet Archive Amix collection](https://archive.org/details/commodore-amiga-operating-systems-amix), and verify them against `sources/CHECKSUMS.txt`. The `a3000ux.hdf` system disk is a **blank RDB hardfile you create yourself**; the Amix installer partitions and formats it.
 
 ## Known limits
 

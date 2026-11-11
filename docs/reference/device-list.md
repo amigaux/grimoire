@@ -10,11 +10,11 @@ This is the quick-reference table for two things you keep needing when you work 
 
 A device node in Amix carries a **major** number (which driver) and a **minor** number (which sub-device). The kernel indexes a per-class switch table by the major and never looks at the file name — see [the device-driver model](../drivers/driver-model.md) for the mechanism. Hardware support is constrained by hard kernel rules (stock drivers Zorro II only, 68020/030 + MMU + FPU, ≥ 4 MB Fast RAM, SCSI disk at ID 6 / tape at ID 4) — those are covered in full on [the hardware page](../how-it-works/hardware.md).
 
-Each row carries the same confidence tag the [research brief](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) uses: ✅ verified (primary source / repo source / reproduced locally), 🟡 community-reported, 🔴 unverified.
+Each row carries the same confidence tag the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) uses: ✅ verified (primary source / repo source / reproduced locally), 🟡 community-reported, 🔴 unverified.
 
 ## /dev major/minor numbers
 
-The four stock entries below come from the `ls -l /dev` excerpt in the Ditto driver paper (§5 of the brief) ✅. The three community-driver entries (va2000, hydra, z3660eth) come from the modern driver projects ✅ — va2000 and hydra from §6 of the [research brief](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md), and z3660eth from the amix-z3660net project (see [## Sources](#sources)).
+The four stock entries below come from the `ls -l /dev` excerpt in the Ditto driver paper (§5 of the brief) ✅. The three community-driver entries (va2000, hydra, z3660eth) come from the modern driver projects ✅ — va2000 and hydra from §6 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md), and z3660eth from the amix-z3660net project (see [## Sources](#sources)).
 
 | `/dev` node | Class | Major | Minor | Driver / purpose | Tag |
 |---|---|---|---|---|---|
@@ -237,8 +237,8 @@ On a running system, list the device nodes and read their major/minor with `ls -
 ## Sources
 
 - The **`/dev/scsi` interface** (2026-11-02) ✅ — the stock `usr/sys/amiga/alien/scsi.c` and `sd.h` in [amigaux/amix-system](https://github.com/amigaux/amix-system) (read here: the static `sdcom` and 1024-byte buffer, the 4-byte rule, the `PRIBIO` sleep); the struct offsets as compiled by gcc-cross-amix 2.7.2.3 and `kbootset`'s use of it ([`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/kbootset/`, (`51dd57a`, on `master`)).
-- Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference — §5 of [`sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) (console char 0, par char 21, fd0 block 16, SCSI disk block 18, minor = addr/LUN/partition; `cdevsw`/`bdevsw` switch tables; `int2_tbl[]` interrupt handlers).
-- [`sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) §2 (supported machines & expansion cards, Zorro II only, SCSI ID 6 / tape ID 4), §6 (va2000 char 68, hydra char 47/`hya`, AutoConfig IDs).
+- Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference — §5 of [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) (console char 0, par char 21, fd0 block 16, SCSI disk block 18, minor = addr/LUN/partition; `cdevsw`/`bdevsw` switch tables; `int2_tbl[]` interrupt handlers).
+- [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §2 (supported machines & expansion cards, Zorro II only, SCSI ID 6 / tape ID 4), §6 (va2000 char 68, hydra char 47/`hya`, AutoConfig IDs).
 - `amix_21_root.adf` analysis via `tools/inspect-adf.sh` (`/dev/rmt/4h`, `BPART=/dev/dsk/c${SCSI}d0s${BOOTPART}`).
 - Driver repos: [`asokero/va2000-amix`](https://github.com/asokero/va2000-amix), [`asokero/lszorro-amix`](https://github.com/asokero/lszorro-amix), [`isoriano1968/hydra-amix`](https://github.com/isoriano1968/hydra-amix).
 - [`isoriano1968/zz9000-amix`](https://github.com/isoriano1968/zz9000-amix) @ `75e2449` (brief §21) — `/dev/zz9000` char major 49 minor 0, Zorro II product 3 (`0x6d6e0003`) only, the author's-tree major assignments (47 hydra / 48 random / 49 zz9000 / 50 sad) behind the collision note. See [the zz9000 case study](../drivers/case-studies/zz9000.md).

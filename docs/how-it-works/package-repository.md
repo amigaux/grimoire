@@ -20,7 +20,7 @@ building packages in the first place, see [toolchain and packaging](../drivers/t
 
 > **Licensing note (updated 2026-09-23).** The format is open. The Amix distribution packages are
 > Commodore material; since 2026-09-23 the Amix release restriction is lifted (Amiga Corporation's
-> approval — see [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary)), so repackaged
+> approval — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary)), so repackaged
 > stock packages may be served publicly. The publish tooling still enforces its own refusals
 > (below); everything else is on the operator.
 
@@ -367,7 +367,7 @@ Two details make the gate trustworthy rather than decorative:
   2026-09-14); the payload-licence gate and why it exists (2026-09-16); the `names.conf` first use and
   the catalog-regenerate trap (2026-09-16 publish log); manual publishing (2026-09-16); the
   39-entry live catalog, 27 stock + 12 own, and the stock packages' exposure posture (2026-09-26).
-- The 2026-09-23 licensing outcome — [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary) ✅.
+- The 2026-09-23 licensing outcome — [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary) ✅.
 - The **live catalog** `http://pkg.amigaux.org/catalog`, read 2026-10-14 ✅: 41 rows — `stock/` (27),
   `extra/` (9), `base/` (3: `APKG`, `APKGENG`, `cdfs`) and `test/` (2); the `pkgs/extra/` add-ons and
   their publication dates (2026-09-15, 09-16, 09-26) per the

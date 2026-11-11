@@ -19,7 +19,7 @@ The work is **first-party and reproduced on real hardware** — the driver was w
 project and run on a physical A4000 + Z3660 in 2026-06. Unless noted, every claim here is **✅
 Verified** (driver source we wrote, or a result reproduced live on the hardware); items resting on
 firmware-side assertion or community lore are tagged 🟡 inline and carried verbatim from the source
-brief per the repo's [confidence-tag policy](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md).
+brief per the repo's [confidence-tag policy](https://github.com/amigaux/grimoire/blob/master/AGENTS.md).
 The source is the **amix-z3660scsi** project at commit `2cc7605` — `src/z3660.c`,
 `src/kernel-patches/dd.c.patch`, `driver.conf`, `NOTES.md`, `README.md` — plus firmware-side facts owned by
 the [Z3660 firmware repo](z3660-ethernet-driver.md#what-the-z3660-and-z3660eth-are).
@@ -531,7 +531,7 @@ digest tool built with the box's own `cc` ✅.
 - **Magic numbers** (✅): AutoConfig product id `0x144B0001`; fixed combo base `0x10000000`; piscsi
   page offset `0x2000`; bounce offset `0x80000`; bounce threshold `0x08000000`; `MAXXFER 65536`; root
   disk `/dev/rdsk/c6d0s1` (SCSI target 6, block major 18 / char major 40).
-- Delta verified against [`llms-full.txt`](https://github.com/Jusii/grimoire-amix/blob/master/llms-full.txt):
+- Delta verified against [`llms-full.txt`](https://github.com/amigaux/grimoire/blob/master/llms-full.txt):
   grimoire documents the Z3660 *ethernet* (`zen0`) and A4091 *53C710* drivers; this page adds the
   previously-undocumented Z3660 *piscsi SCSI* driver.
 - **The emulated mailbox coverage** (2026-07) ✅ — a `z3660scsi` kernel and a combined

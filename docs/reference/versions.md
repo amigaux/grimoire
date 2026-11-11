@@ -66,7 +66,7 @@ view, with `/usr/ucb/nroff` on the box ✅ ([man pages](commands-cheatsheet.md#m
 Our local boot/root/patch floppies are the **2.1** install set (`amix_21_boot.adf`,
 `amix_21_root.adf`, `amix_21_patch.adf`). They are Commodore material — this repo does not redistribute
 them (the Amix release restriction was lifted on 2026-09-23, see
-[`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary)); obtain them from [amigaunix.com](https://www.amigaunix.com/doku.php/home) or
+[`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary)); obtain them from [amigaunix.com](https://www.amigaunix.com/doku.php/home) or
 [archive.org](https://archive.org/details/commodore-amiga-operating-systems-amix). Verify any copy
 against the SHA-256 values in `sources/CHECKSUMS.txt` and inspect with `tools/inspect-adf.sh <image>`.
 

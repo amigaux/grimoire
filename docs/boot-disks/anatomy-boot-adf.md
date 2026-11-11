@@ -144,7 +144,7 @@ warning. ✅ (Struct + fields confirmed against the published Commodore `infoblo
 
 ## Inspecting it yourself
 
-Use [`tools/inspect-adf.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/inspect-adf.sh) — it is read-only and never modifies the image. Point it at **your own** copy (see [below](#where-to-get-the-image)):
+Use [`tools/inspect-adf.sh`](https://github.com/amigaux/grimoire/blob/master/tools/inspect-adf.sh) — it is read-only and never modifies the image. Point it at **your own** copy (see [below](#where-to-get-the-image)):
 
 ```sh
 tools/inspect-adf.sh amix_21_boot.adf
@@ -206,7 +206,7 @@ At install time the boot floppy's kernel comes up first, then you swap in the ro
 
 ## Where to get the image
 
-The Amix install floppies are **Commodore media**, and this repo never ships them (it is a text knowledge hub). Until 2026-09-23 this project treated them as abandonware, not licensed for redistribution; since then the Amix release restriction is lifted — see [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary). Obtain your own copy and verify by hash (filenames vary, e.g. `amix_2.1_boot.adf` vs `amix_21_boot.adf` — match on SHA-256, not name):
+The Amix install floppies are **Commodore media**, and this repo never ships them (it is a text knowledge hub). Until 2026-09-23 this project treated them as abandonware, not licensed for redistribution; since then the Amix release restriction is lifted — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary). Obtain your own copy and verify by hash (filenames vary, e.g. `amix_2.1_boot.adf` vs `amix_21_boot.adf` — match on SHA-256, not name):
 
 - amigaunix.com → Downloads: <https://www.amigaunix.com/doku.php/downloads>
 - Internet Archive: <https://archive.org/details/commodore-amiga-operating-systems-amix>
@@ -226,8 +226,8 @@ Expected SHA-256: `0d8af1c06b524411cc43d33c4a156afe6216ec895f50188747d0f3a6bed65
 ## Sources
 - **Stock sources, public** ✅ — the Commodore boot source in [`amigaux/amix-system`](https://github.com/amigaux/amix-system) (`7cba961`): [`usr/sys/amiga/boot/infoblock.h`](https://github.com/amigaux/amix-system/blob/7cba961/usr/sys/amiga/boot/infoblock.h), [`usr/sys/amiga/boot/makeiblk.c`](https://github.com/amigaux/amix-system/blob/7cba961/usr/sys/amiga/boot/makeiblk.c), [`usr/sys/amiga/boot/chksum.c`](https://github.com/amigaux/amix-system/blob/7cba961/usr/sys/amiga/boot/chksum.c), [`usr/sys/amiga/boot/boot1.c`](https://github.com/amigaux/amix-system/blob/7cba961/usr/sys/amiga/boot/boot1.c), [`usr/sys/amiga/boot/boot2.c`](https://github.com/amigaux/amix-system/blob/7cba961/usr/sys/amiga/boot/boot2.c), [`usr/sys/amiga/boot/decompress.c`](https://github.com/amigaux/amix-system/blob/7cba961/usr/sys/amiga/boot/decompress.c).
 
-- `amix_21_boot.adf` analysis via [`tools/inspect-adf.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/inspect-adf.sh) — bootblock hex dump, `DOS\0` magic + checksum, bootstrap/kernel strings, `xdftool` "Invalid Root Block @880", binwalk false-positive "JBOOT" hits (reproduced locally; SHA-256 `0d8af1c0…65272`, see `sources/CHECKSUMS.txt`).
-- [`sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) §3 ("What the real boot.adf contains") and §10 ("boot.adf").
+- `amix_21_boot.adf` analysis via [`tools/inspect-adf.sh`](https://github.com/amigaux/grimoire/blob/master/tools/inspect-adf.sh) — bootblock hex dump, `DOS\0` magic + checksum, bootstrap/kernel strings, `xdftool` "Invalid Root Block @880", binwalk false-positive "JBOOT" hits (reproduced locally; SHA-256 `0d8af1c0…65272`, see `sources/CHECKSUMS.txt`).
+- [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §3 ("What the real boot.adf contains") and §10 ("boot.adf").
 - **Commodore boot source** (`infoblock.h`, `makeiblk.c`, `chksum.c`, `boot1.c`/`boot2.c`, `decompress.c`; Copyright 1991 CBM), published 2026-06 in the [hydra-amix repo](https://github.com/isoriano1968/hydra-amix) — confirms the IBLK `struct infoblock` fields and the SVR4-`sum` checksum. Referenced for interoperability, not redistributed.
 - amigaunix.com Downloads (image source): <https://www.amigaunix.com/doku.php/downloads>
 - Internet Archive, *Commodore Amiga Operating Systems — AMIX*: <https://archive.org/details/commodore-amiga-operating-systems-amix>

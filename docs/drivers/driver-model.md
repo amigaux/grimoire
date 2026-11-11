@@ -6,7 +6,7 @@ status: draft
 
 # The Amix Device-Driver Model
 
-In Amix, a device is just a file in `/dev` carrying two numbers — a **major** (which driver) and a **minor** (which sub-device). The kernel never looks at the name; it indexes a per-class **switch table** by the major number to find the driver's entry points. Everything else in this page is the elaboration of that one idea ✅. The authoritative source is Michael Ditto's *Writing Amix Device Drivers* (1990 European Amiga Developer's Conference), §5 of the [research brief](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md), and it is the conceptual core for the rest of the drivers pillar.
+In Amix, a device is just a file in `/dev` carrying two numbers — a **major** (which driver) and a **minor** (which sub-device). The kernel never looks at the name; it indexes a per-class **switch table** by the major number to find the driver's entry points. Everything else in this page is the elaboration of that one idea ✅. The authoritative source is Michael Ditto's *Writing Amix Device Drivers* (1990 European Amiga Developer's Conference), §5 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md), and it is the conceptual core for the rest of the drivers pillar.
 
 This page is **uniformly ✅** except where a tag says otherwise. The core model's primary source is the Ditto paper; the later [HBA/DMA driver contract](#the-amix-hbadma-driver-contract-real-hardware) and [in-kernel filesystem](#writing-an-in-kernel-filesystem-the-svr4-vfs_mount-contract) sections are first-party, real-hardware-verified findings (amix-z3660scsi / amix-cdfs) cited inline.
 
@@ -220,7 +220,7 @@ The paper's end-to-end procedure ties the whole model together ✅. Full mechani
 ## Sources
 
 - Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference (the project's authoritative driver paper) — §5; `cdevsw`/`bdevsw` from `conf.h`; the `ls -l /dev` example; `par.c` worked driver and `par(7A)` man page (p.22).
-- [`sources/research-brief.md`](https://github.com/Jusii/grimoire-amix/blob/master/sources/research-brief.md) §5 (device-driver model), §4 (kernel architecture: monolithic, no loadable modules, `kernel.c` in source), §2 (SCSI ID hard-coding, Zorro II only).
+- [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §5 (device-driver model), §4 (kernel architecture: monolithic, no loadable modules, `kernel.c` in source), §2 (SCSI ID hard-coding, Zorro II only).
 - `asokero/va2000-amix` repo (`io_init[]` / `cdevsw[]` slot 68 patches): <https://github.com/asokero/va2000-amix>
 - `isoriano1968/hydra-amix` repo (`hya` at `cdevsw` slot 47, `hydraopen`/`hydrawput`/`hydraintr`): <https://github.com/isoriano1968/hydra-amix>
 - **The HBA/DMA driver contract** (the "real hardware" section) — **amix-z3660scsi** @ `2a463b8`: `a5af58a`

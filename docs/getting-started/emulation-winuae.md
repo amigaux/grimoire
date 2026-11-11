@@ -12,7 +12,7 @@ If you want the *why* behind these settings, see [how Amix uses the hardware](..
 
 ## Before you start: what you need
 
-You supply your own images — this repo does not ship them (it is a text knowledge hub; the 2026-09-23 licensing outcome, which lifted the Amix release restriction, is recorded in [`AGENTS.md` §5](https://github.com/Jusii/grimoire-amix/blob/master/AGENTS.md#5-respect-the-licensing-boundary)). Get them from [amigaunix.com](https://www.amigaunix.com/doku.php/home) and the [Internet Archive Amix collection](https://archive.org/details/commodore-amiga-operating-systems-amix).
+You supply your own images — this repo does not ship them (it is a text knowledge hub; the 2026-09-23 licensing outcome, which lifted the Amix release restriction, is recorded in [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary)). Get them from [amigaunix.com](https://www.amigaunix.com/doku.php/home) and the [Internet Archive Amix collection](https://archive.org/details/commodore-amiga-operating-systems-amix).
 
 | File | What it is | Where it goes |
 |---|---|---|

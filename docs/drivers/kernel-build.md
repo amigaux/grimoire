@@ -311,9 +311,9 @@ MMU's own fault-resume machinery and descriptor `M`-bit handling.
 
 ✅ A clean `ld` output is **byte-deterministic**; each corruption is **random and unique**.
 Therefore **a checksum (`sum -r`) that *recurs* is the deterministic clean kernel.**
-[`tools/build-clean-kernel.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/build-clean-kernel.sh)
+[`tools/build-clean-kernel.sh`](https://github.com/amigaux/grimoire/blob/master/tools/build-clean-kernel.sh)
 (runs **on** the Amix box) relinks (link-only, no install) until a `sum -r` value repeats, then
-confirms with [`tools/checkunix.c`](https://github.com/Jusii/grimoire-amix/blob/master/tools/checkunix.c),
+confirms with [`tools/checkunix.c`](https://github.com/amigaux/grimoire/blob/master/tools/checkunix.c),
 leaving a verified-clean `relocunix`:
 
 ```sh
@@ -328,8 +328,8 @@ Two complementary detectors exist:
 
 | Detector | What it checks | Trade-off |
 |---|---|---|
-| [`tools/checkunix.c`](https://github.com/Jusii/grimoire-amix/blob/master/tools/checkunix.c) | native big-endian `.symtab` integrity (flags out-of-range `st_shndx`) | **fast**, runs on the box, but **symtab-only** — misses `.rela`/`.text` shifts ✅ |
-| [`tools/relsim.py`](https://github.com/Jusii/grimoire-amix/blob/master/tools/relsim.py) | host-side reimplementation of the boot relocator `rel()` | checks `.symtab` **and** relocation records — a **kernel-record** oracle ✅ |
+| [`tools/checkunix.c`](https://github.com/amigaux/grimoire/blob/master/tools/checkunix.c) | native big-endian `.symtab` integrity (flags out-of-range `st_shndx`) | **fast**, runs on the box, but **symtab-only** — misses `.rela`/`.text` shifts ✅ |
+| [`tools/relsim.py`](https://github.com/amigaux/grimoire/blob/master/tools/relsim.py) | host-side reimplementation of the boot relocator `rel()` | checks `.symtab` **and** relocation records — a **kernel-record** oracle ✅ |
 
 **Scope correction (2026-07-16) ✅:** `relsim.py` (and the native `reltest`) validate the boot
 relocator's *source semantics against the kernel's records* — they are **kernel-record oracles,
@@ -756,12 +756,12 @@ the pre-POSIX shell warning in Step 2. One-line checklist entry:
 - The A4091-on-Amix project — `NOTES.md` §17–§18 (the `D245` boot-breaker: relocator `Alert()`
   mechanism, the emulator-only kernel-image corruption (configuration-dependent; see the D245 section), the build-until-stable gate; reproduced
   locally ✅) and the handoff brief §5/§10, plus `src/`/`tools/`.
-- [`tools/build-clean-kernel.sh`](https://github.com/Jusii/grimoire-amix/blob/master/tools/build-clean-kernel.sh)
+- [`tools/build-clean-kernel.sh`](https://github.com/amigaux/grimoire/blob/master/tools/build-clean-kernel.sh)
   — the relink-until-`sum -r`-recurs clean-gate that dodges the `D245` corruption.
-- [`tools/checkunix.c`](https://github.com/Jusii/grimoire-amix/blob/master/tools/checkunix.c)
+- [`tools/checkunix.c`](https://github.com/amigaux/grimoire/blob/master/tools/checkunix.c)
   — native big-endian `.symtab` integrity detector (`0x52454C41 | AT_DeadEnd` == `D245`; build with
   `cc -O -o checkunix checkunix.c`).
-- [`tools/relsim.py`](https://github.com/Jusii/grimoire-amix/blob/master/tools/relsim.py)
+- [`tools/relsim.py`](https://github.com/amigaux/grimoire/blob/master/tools/relsim.py)
   — host-side reimplementation of the boot relocator `rel()`; the full offline `D245` oracle
   (symtab **and** relocation records).
 - a4091.device open-source project: <https://github.com/A4091/a4091-software> (A4091 ROM + SCRIPTS

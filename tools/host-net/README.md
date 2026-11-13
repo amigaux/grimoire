@@ -17,13 +17,18 @@ interface `ETH` (`ip neigh replace proxy $GUEST_IP dev $ETH`); `net.ipv4.conf.$E
 stays `0`. Interface-wide proxy ARP there would make Linux answer for any address it
 routes out of another interface, so a host with two interfaces in the same subnet
 (wired and Wi-Fi on one LAN, say) would answer for every address on the LAN and other
-devices would see address conflicts. The TAP keeps interface-wide proxy ARP so the
-guest's ARP for the gateway gets an answer; only the guest is behind it. 🟡 (not yet
-re-run end to end on a host in this form)
+devices would see address conflicts 🟡. The TAP keeps interface-wide proxy ARP so the
+guest's ARP for the gateway gets an answer; only the guest is behind it.
+
+Run as a service on a host with a wired and a wireless interface in the guest's subnet,
+Docker present and `ETH` pinned: the host holds exactly one proxy entry, the guest's
+address on the wired interface; `proxy_arp` reads `0` on both LAN interfaces and `1` on
+the TAP; and the ARP check below comes out as written ✅. Guest traffic end to end over
+the TAP in this form has not been run yet (no guest was booted on it) 🟡.
 
 `ETH` should be set. Without it, `amix-lan-up.sh` takes the default-route interface and
 stops, asking for `ETH=`, when that interface is wireless or another interface also has
-an address in the guest's subnet.
+an address in the guest's subnet 🟡 (checked in a dry run only, not on a live host).
 
 Why routed rather than a true L2 bridge:
 
@@ -42,7 +47,7 @@ Why routed rather than a true L2 bridge:
 | File | Purpose |
 |---|---|
 | `amix-lan-up.sh`   | Idempotent host setup: TAP, proxy ARP for the guest's address, ip_forward, `/32` route, forward rules (Docker-aware). |
-| `amix-lan-down.sh` | Full teardown; finds the LAN interface from what `amix-lan-up.sh` left, and clears an interface-wide `proxy_arp=1` that older versions set. |
+| `amix-lan-down.sh` | Full teardown; clears an interface-wide `proxy_arp=1` that older versions set. With `ETH` unset it finds the LAN interface from what `amix-lan-up.sh` left (dry run only 🟡). |
 | `amix-lan.service` | systemd unit so the host side comes up at boot (after `docker.service`). |
 | `amixsh.py`        | Run shell commands on Amix over telnet, scripted (no PTY). Good for automation / agents. [Limits and exit status](#amixshpy-limits-and-exit-status) below. |
 | `test-amixsh.py`   | Tests for `amixsh.py`'s exit status against a fake login and shell. Needs no Amix box, and so tests the script's logic, not a real tty. |
@@ -120,13 +125,17 @@ AMIX_HOST="$GUEST_IP" python3 amixsh.py 'ifconfig aen0' 'ping www.google.com'
 sudo cp amix-lan-up.sh amix-lan-down.sh /usr/local/sbin/
 sudo chmod 755 /usr/local/sbin/amix-lan-up.sh /usr/local/sbin/amix-lan-down.sh
 sudo cp amix-lan.service /etc/systemd/system/
-# pin the wired interface and your addresses in a drop-in:
+# pin the wired interface, the TAP's owner and your addresses in a drop-in:
 sudo mkdir -p /etc/systemd/system/amix-lan.service.d
-printf '[Service]\nEnvironment=ETH=<wired interface> GUEST_IP=192.0.2.38 TAP_ANCHOR=192.0.2.17\n' |
+printf '[Service]\nEnvironment=ETH=<wired interface> TAP_OWNER=<user> GUEST_IP=192.0.2.38 TAP_ANCHOR=192.0.2.17\n' |
     sudo tee /etc/systemd/system/amix-lan.service.d/local.conf
 sudo systemctl daemon-reload
 sudo systemctl enable --now amix-lan.service
 ```
+
+Set `TAP_OWNER` to the user who runs Amiberry: started from systemd there is no login
+user, so without it the TAP is created owned by root ✅. The unit starts and restarts
+cleanly with these scripts, including a restart over the rules an older version left ✅.
 
 Undo: `sudo systemctl disable --now amix-lan.service` (it runs `amix-lan-down.sh`).
 
@@ -142,7 +151,8 @@ arping -I <interface> -c 3 192.0.2.99   # an address nobody uses: no reply
 
 Any other address gets no answer from the host: replies, if any, come from the device
 that owns it. On the host, `ip neigh show proxy` shows the guest's address on `ETH`
-only, and `sysctl net.ipv4.conf.$ETH.proxy_arp` is `0`.
+only, and `sysctl net.ipv4.conf.$ETH.proxy_arp` is `0`. ✅ (run on a host with a wired
+and a wireless interface in one subnet)
 
 > The TAP has **no carrier until Amiberry attaches to it**, so the guest is only
 > reachable while Amiberry is running — the service just makes the routing/ARP

@@ -7849,8 +7849,11 @@ It builds on the conceptual [networking page](../how-it-works/networking.md) (th
   proxy ARP (`net.ipv4.conf.<NIC>.proxy_arp=1`) makes Linux answer for any address it
   routes out of another interface: on a host with two interfaces in one subnet (wired
   and Wi-Fi on the same LAN, say), that is every address of the LAN, and other devices
-  see address conflicts. The TAP side keeps interface-wide proxy ARP, since only the
-  guest is behind it. 🟡 (the per-address form has not yet been re-run end to end)
+  see address conflicts 🟡. The TAP side keeps interface-wide proxy ARP, since only the
+  guest is behind it. On a host with a wired and a wireless interface in the guest's
+  subnet, the host held exactly one proxy entry (the guest's, on the wired interface)
+  and `proxy_arp` read `0` on both LAN interfaces and `1` on the TAP ✅; guest traffic
+  end to end over the TAP in this form has not been run yet 🟡.
 - A **true L2 bridge** (`br0` enslaving the NIC + `tap0`, host IP moved onto `br0`)
   also works and is more "native", but it momentarily blips the host's connectivity
   and risks the uplink for no functional gain here. The Amiberry/guest config is
@@ -7866,7 +7869,8 @@ sudo env GUEST_IP=192.0.2.38 ETH=<wired interface> sh tools/host-net/amix-lan-up
 
 Without `ETH` the script takes the interface of the default route, and stops with a
 message asking for `ETH=` when that interface is wireless or when another interface
-also has an address in the guest's subnet, rather than guess.
+also has an address in the guest's subnet, rather than guess 🟡 (checked in a dry run,
+not on a live host).
 
 That is exactly equivalent to (LAN NIC shown as `$ETH`):
 
@@ -8083,8 +8087,8 @@ arping -I <interface> -c 3 192.0.2.1     # another device: replies only from tha
 ```
 
 On the host, `ip neigh show proxy` lists the guest's address on the LAN interface
-and nothing else of ours, and `sysctl net.ipv4.conf.<LAN interface>.proxy_arp` is `0`. 🟡
-(the expected results; not yet run with the per-address form)
+and nothing else of ours, and `sysctl net.ipv4.conf.<LAN interface>.proxy_arp` is `0`. ✅
+(run on a host with a wired and a wireless interface in one subnet)
 
 SVR4 `ping host` is single-shot ("`host is alive`" / "`no answer`"), not a
 continuous stream — handy for scripting. ✅
@@ -8098,12 +8102,14 @@ continuous stream — handy for scripting. ✅
   and `ping www.google.com` works — with zero manual steps. ✅
 - **Host:** the `ip`/`sysctl`/`iptables` state is not persistent. Install the
   service so it's recreated at boot, and pin the wired interface and your addresses
-  in a drop-in (at boot the default route may not be on the wired interface yet):
+  in a drop-in (at boot the default route may not be on the wired interface yet). Set
+  `TAP_OWNER` to the user who runs Amiberry: a service has no login user, so without it
+  the TAP is created owned by root ✅.
   ```sh
   sudo install -m 755 tools/host-net/amix-lan-up.sh tools/host-net/amix-lan-down.sh /usr/local/sbin/
   sudo install -m 644 tools/host-net/amix-lan.service /etc/systemd/system/
   sudo mkdir -p /etc/systemd/system/amix-lan.service.d
-  printf '[Service]\nEnvironment=ETH=<wired interface> GUEST_IP=192.0.2.38 TAP_ANCHOR=192.0.2.17\n' |
+  printf '[Service]\nEnvironment=ETH=<wired interface> TAP_OWNER=<user> GUEST_IP=192.0.2.38 TAP_ANCHOR=192.0.2.17\n' |
       sudo tee /etc/systemd/system/amix-lan.service.d/local.conf
   sudo systemctl daemon-reload && sudo systemctl enable --now amix-lan.service
   ```
@@ -8139,7 +8145,11 @@ Useful for automation / agents driving Amix without a visible window:
 - DNS-enable slow-boot + literal-IP fix: The A4091-on-Amix project — networking investigation, 2026-06-07 (reproduced locally ✅) — instrumented `/etc/rc2` per-script timing on Amix 2.1c under Amiberry, isolating the ~180 s hang to the two boot-time `gethostbyname()` calls; boot **210 s → 29 s** after the fix. `/etc/rc2.d/S69inet` (hardlinked to `/etc/init.d/inetinit`), `/etc/inet/network-config` (`ifconfig aen0 \`uname -n\`` → literal IP), `/etc/inet/rc.inet` (default route runs *after* `network-config`) — read directly off the running system; `for f in /etc/rc2.d/S*` glob confirms backup S\* files execute at boot.
 - LAN-side proxy ARP for the guest's address only: the `proxy` form of iproute2's `ip neigh`
   (`ip-neighbour(8)`). The scripts were checked with `sh -n`, ShellCheck and a dry run against
-  stubbed `ip`/`sysctl`/`iptables`, not yet on a host 🟡.
+  stubbed `ip`/`sysctl`/`iptables`, then run as the service on 2026-11-13 on a Linux host with
+  Docker and a wired and a wireless interface in the guest's subnet, `ETH` pinned: clean start
+  and restart (over an older version's rules), one proxy entry, `proxy_arp` `0`/`0`/`1`, the
+  `arping` check as written, and the root-owned TAP without `TAP_OWNER` ✅. Not run there: guest
+  traffic over the TAP, the `ETH` refusal, and `amix-lan-down.sh` with `ETH` unset 🟡.
 - Research brief §11 (networking) and the conceptual [networking page](../how-it-works/networking.md).
 
 

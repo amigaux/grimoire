@@ -10,11 +10,12 @@ Type=oneshot
 RemainAfterExit=yes
 # Pin the LAN interface and the addresses in a drop-in (systemctl edit amix-lan.service):
 #   [Service]
-#   Environment=ETH=<wired interface> GUEST_IP=<guest address> TAP_ANCHOR=<unused address>
+#   Environment=ETH=<wired interface> TAP_OWNER=<user> GUEST_IP=<guest address> TAP_ANCHOR=<unused address>
 # Pin ETH: at boot the default route may not be on the wired interface yet. Unset,
 # amix-lan-up.sh takes the default-route interface and refuses to start (the unit
 # fails) when that is wireless or another interface shares the guest's subnet.
-# TAP_OWNER=<user> may go on the same line.
+# Set TAP_OWNER to the user who runs Amiberry: a service has no login user, so
+# without it the TAP is created owned by root.
 ExecStart=/usr/local/sbin/amix-lan-up.sh
 ExecStop=/usr/local/sbin/amix-lan-down.sh
 

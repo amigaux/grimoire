@@ -21,8 +21,9 @@
 #
 # Idempotent. Run as root (sudo sh amix-lan-up.sh). Tested 2026-06 on Ubuntu-
 # family host with Docker present, Amiberry 8.1.6, Amix 2.1 (SVR4.0), with the
-# interface-wide LAN-side proxy ARP of that time; the per-address form is not yet
-# run on a host.
+# interface-wide LAN-side proxy ARP of that time. The per-address form has run as
+# the service on a host with ETH pinned; guest traffic over it and the ETH guard
+# on a live host have not been run yet.
 set -e
 
 GUEST_IP="${GUEST_IP:-192.0.2.38}"          # the guest's LAN address -- the default is an RFC 5737 example: SET GUEST_IP

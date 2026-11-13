@@ -712,5 +712,10 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   address of the LAN 🟡. The script adds one proxy entry for the guest (`ip neigh replace proxy <guest> dev $ETH`),
   keeps interface-wide proxy ARP on the TAP only, and without `ETH` refuses a wireless default-route interface or a
   subnet shared by two interfaces; `amix-lan-down.sh` removes the entry and clears a `proxy_arp=1` left by older
-  versions. Checked with `sh -n`, ShellCheck and a dry run against stubbed `ip`/`sysctl`/`iptables`; not yet run on
-  a host 🟡.
+  versions. Checked with `sh -n`, ShellCheck and a dry run against stubbed `ip`/`sysctl`/`iptables`. Run as the
+  service on a Linux host with Docker and a wired and a wireless interface in the guest's subnet, `ETH` pinned: the
+  unit starts and restarts cleanly (the stop ran the new `amix-lan-down.sh` over an older version's rules); one proxy
+  entry, the guest's on the wired interface; `proxy_arp` `0` on both LAN interfaces and `1` on the TAP; the `arping`
+  check as documented ✅. Started from systemd there is no login user, so the TAP is root-owned unless `TAP_OWNER` is
+  set ✅. Not run on a host: guest traffic over the TAP in this form, the `ETH` refusal, and `amix-lan-down.sh` with
+  `ETH` unset 🟡.

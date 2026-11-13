@@ -1,5 +1,5 @@
 [Unit]
-Description=Amix-on-LAN host networking (routed TAP + proxy-ARP for Amiberry a2065=tap0)
+Description=Amix-on-LAN host networking (routed TAP + per-address proxy ARP for Amiberry a2065=tap0)
 Documentation=https://www.amigaunix.com/doku.php/networking
 # Docker manages the iptables FORWARD policy; come up after it so DOCKER-USER exists.
 After=network-online.target docker.service
@@ -8,7 +8,13 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-# Override defaults here with Environment=GUEST_IP=... ETH=... TAP_OWNER=... if needed.
+# Pin the LAN interface and the addresses in a drop-in (systemctl edit amix-lan.service):
+#   [Service]
+#   Environment=ETH=<wired interface> GUEST_IP=<guest address> TAP_ANCHOR=<unused address>
+# Pin ETH: at boot the default route may not be on the wired interface yet. Unset,
+# amix-lan-up.sh takes the default-route interface and refuses to start (the unit
+# fails) when that is wireless or another interface shares the guest's subnet.
+# TAP_OWNER=<user> may go on the same line.
 ExecStart=/usr/local/sbin/amix-lan-up.sh
 ExecStop=/usr/local/sbin/amix-lan-down.sh
 

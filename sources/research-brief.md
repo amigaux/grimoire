@@ -706,3 +706,11 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   and later ones `amiberry_1.sock` to `amiberry_9.sock` ✅. With several emulators running, a tool that defaults
   to the plain name reaches the first one started; a shot and typed keys went to another emulator that way 🟡.
   `tools/amishot.sh` now takes `--socket` or `AMIBERRY_SOCK` with no default (tested against a fake socket) ✅.
+- **2026-11-13 — host-net: proxy ARP for the guest's address only.** `tools/host-net/amix-lan-up.sh` no longer
+  sets interface-wide `proxy_arp` on the LAN interface. Linux then answers ARP for any address it routes out of
+  another interface, so a host with two interfaces in one subnet (wired and Wi-Fi on one LAN) answers for every
+  address of the LAN 🟡. The script adds one proxy entry for the guest (`ip neigh replace proxy <guest> dev $ETH`),
+  keeps interface-wide proxy ARP on the TAP only, and without `ETH` refuses a wireless default-route interface or a
+  subnet shared by two interfaces; `amix-lan-down.sh` removes the entry and clears a `proxy_arp=1` left by older
+  versions. Checked with `sh -n`, ShellCheck and a dry run against stubbed `ip`/`sysctl`/`iptables`; not yet run on
+  a host 🟡.

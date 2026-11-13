@@ -1,25 +1,66 @@
 #!/bin/sh
 # amix-lan-up.sh -- put an Amiberry-emulated Amix guest on the real LAN.
 #
-# Model: a routed TAP + proxy-ARP, NOT an L2 bridge. The host answers ARP for
-# the guest's reserved IP on the LAN side and forwards packets to a TAP that
-# Amiberry's emulated A2065 attaches to (config line: a2065=tap0). This makes
-# the guest a real, reachable host on the LAN *without ever touching the host's
-# own IP / default route / NetworkManager* -- so it cannot knock the host off
-# the network. (A true L2 bridge also works; see README.md for the trade-off.)
+# Model: a routed TAP + per-address proxy ARP, NOT an L2 bridge. The host answers
+# ARP on the LAN interface ($ETH) for the guest's one address only (an
+# `ip neigh ... proxy` entry) and forwards packets to a TAP that Amiberry's
+# emulated A2065 attaches to (config line: a2065=tap0). This makes the guest a
+# real, reachable host on the LAN *without ever touching the host's own IP /
+# default route / NetworkManager* -- so it cannot knock the host off the network.
+# (A true L2 bridge also works; see README.md for the trade-off.)
+#
+# Interface-wide proxy ARP (net.ipv4.conf.$ETH.proxy_arp=1) is deliberately NOT
+# used on the LAN side: with it, the host answers ARP for any address it routes
+# out of another interface, so a host with two interfaces on one subnet (wired and
+# Wi-Fi, say) answers for every address of the LAN and other devices see address
+# conflicts. Only the TAP gets interface-wide proxy ARP; it faces just the guest.
+#
+# ETH: set it (ETH=<wired interface>) for a service. Unset, the script takes the
+# default-route interface, and stops instead of guessing when that interface is
+# wireless or when another interface also has an address in the guest's subnet.
 #
 # Idempotent. Run as root (sudo sh amix-lan-up.sh). Tested 2026-06 on Ubuntu-
-# family host with Docker present, Amiberry 8.1.6, Amix 2.1 (SVR4.0).
+# family host with Docker present, Amiberry 8.1.6, Amix 2.1 (SVR4.0), with the
+# interface-wide LAN-side proxy ARP of that time; the per-address form is not yet
+# run on a host.
 set -e
 
 GUEST_IP="${GUEST_IP:-192.0.2.38}"          # the guest's LAN address -- the default is an RFC 5737 example: SET GUEST_IP
 TAP="${TAP:-tap0}"
 TAP_OWNER="${TAP_OWNER:-$(logname 2>/dev/null || echo "$SUDO_USER")}"
 TAP_ANCHOR="${TAP_ANCHOR:-192.0.2.17}"      # host-side /32 on the tap (host<->guest); SET it to an address unused on your LAN
-# LAN uplink = the interface carrying the default route, unless overridden.
-ETH="${ETH:-$(ip route show default 2>/dev/null | awk '/default/{print $5; exit}')}"
 
-[ -n "$ETH" ] || { echo "amix-lan: cannot determine LAN interface; set ETH=..." >&2; exit 1; }
+die() { echo "amix-lan: $*" >&2; exit 1; }
+
+# Interfaces other than the TAP with an IPv4 address whose subnet holds GUEST_IP.
+subnet_ifaces() {
+    ip -o -4 addr show scope global 2>/dev/null | awk -v g="$GUEST_IP" -v tap="$TAP" '
+        function n(a,  p) { split(a, p, "."); return ((p[1] * 256 + p[2]) * 256 + p[3]) * 256 + p[4] }
+        $2 != tap && $3 == "inet" {
+            split($4, c, "/"); size = 2 ^ (32 - c[2])
+            if (int(n(c[1]) / size) == int(n(g) / size)) print $2
+        }' | sort -u
+}
+is_wireless() { [ -d "/sys/class/net/$1/wireless" ] || [ -e "/sys/class/net/$1/phy80211" ]; }
+
+# LAN uplink: ETH when set; otherwise the default-route interface, if that is safe.
+if [ -z "${ETH:-}" ]; then
+    ETH="$(ip route show default 2>/dev/null | awk '/default/{print $5; exit}')"
+    [ -n "$ETH" ] || die "cannot determine the LAN interface; set ETH=<wired interface>"
+    IN_SUBNET="$(subnet_ifaces | tr '\n' ' ' | sed 's/ $//')"
+    # shellcheck disable=SC2086  # split the interface list into $1, $2, ...
+    set -- $IN_SUBNET
+    if [ $# -gt 1 ]; then
+        die "several interfaces have an address in $GUEST_IP's subnet ($IN_SUBNET); set ETH=<wired interface>"
+    fi
+    if [ $# -eq 1 ] && [ "$1" != "$ETH" ]; then
+        die "$GUEST_IP's subnet is on $1, the default route on $ETH; set ETH=<wired interface>"
+    fi
+    if is_wireless "$ETH"; then
+        die "the default-route interface $ETH is wireless; set ETH=<wired interface>"
+    fi
+    [ $# -eq 1 ] || echo "amix-lan: warning: no interface has an address in $GUEST_IP's subnet; using $ETH" >&2
+fi
 echo "[amix-lan] guest=$GUEST_IP tap=$TAP eth=$ETH owner=${TAP_OWNER:-root} anchor=$TAP_ANCHOR"
 
 # 1. Persistent, user-owned TAP. Amiberry attaches to it via TUNSETIFF
@@ -64,10 +105,20 @@ ip addr replace "$TAP_ANCHOR/32" dev "$TAP"
 #    host itself can originate traffic to the guest (ping/telnet/ftp from host).
 ip route replace "$GUEST_IP/32" dev "$TAP" src "$TAP_ANCHOR"
 
-# 3. Make the host a proxy-ARP router between the tap and the LAN.
+# 3. Proxy ARP. LAN side: answer for the guest's address only, on $ETH only;
+#    any entry for it left on another interface is removed, so exactly one
+#    interface answers. Tap side: interface-wide, so the guest's ARP for the
+#    gateway and other LAN hosts gets the host's answer. ip_forward lets the
+#    host route between the two.
 sysctl -wq net.ipv4.ip_forward=1
-sysctl -wq "net.ipv4.conf.$ETH.proxy_arp=1"
+ip -4 neigh show proxy 2>/dev/null | awk -v g="$GUEST_IP" -v e="$ETH" '$1 == g && $2 == "dev" && $3 != e { print $3 }' |
+    while read -r OLD; do ip neigh del proxy "$GUEST_IP" dev "$OLD" 2>/dev/null || true; done
+ip neigh replace proxy "$GUEST_IP" dev "$ETH"
 sysctl -wq "net.ipv4.conf.$TAP.proxy_arp=1"
+if [ "$(cat "/proc/sys/net/ipv4/conf/$ETH/proxy_arp" 2>/dev/null)" = 1 ]; then
+    echo "amix-lan: warning: interface-wide proxy_arp is on for $ETH (an older amix-lan-up.sh, or set" >&2
+    echo "amix-lan:   elsewhere); it is not needed now, and amix-lan-down.sh clears it" >&2
+fi
 
 # 4. Permit forwarding even when Docker has set the FORWARD policy to DROP.
 #    DOCKER-USER is evaluated before Docker's own rules and is never flushed by

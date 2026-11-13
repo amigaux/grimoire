@@ -1,6 +1,6 @@
 ---
 title: Putting Amix on your real LAN (Amiberry)
-summary: A verified, end-to-end recipe to make an Amiberry-emulated Amix a real host on your physical LAN — static IP, gateway, DNS and internet, surviving reboot — using the A2065 on a routed TAP plus proxy-ARP, and the SVR4 files that make it persistent.
+summary: A verified, end-to-end recipe to make an Amiberry-emulated Amix a real host on your physical LAN — static IP, gateway, DNS and internet, surviving reboot — using the A2065 on a routed TAP plus proxy ARP for the guest's address only, and the SVR4 files that make it persistent.
 status: draft
 ---
 
@@ -22,7 +22,7 @@ It builds on the conceptual [networking page](../how-it-works/networking.md) (th
 
 > Substitute your own IP/gateway/DNS throughout. The host-side helpers in
 > [`tools/host-net/`](https://github.com/amigaux/grimoire/tree/master/tools/host-net/) default to exactly these values and
-> autodetect your LAN interface.
+> take the LAN interface from `ETH`, or from the default route when that is safe (see Step 1).
 
 ## Why this works on Amiberry (and the design choice)
 
@@ -34,6 +34,13 @@ It builds on the conceptual [networking page](../how-it-works/networking.md) (th
   routing the guest's `/32` at the TAP. This makes Amix a real LAN host **without
   ever touching the host's own IP, default route, or NetworkManager** — so it can't
   knock the host off the network. ✅
+- On the LAN side the host answers ARP for the **guest's one address only** (a proxy
+  entry, `ip neigh replace proxy <guest> dev <LAN NIC>`), never interface-wide. Interface-wide
+  proxy ARP (`net.ipv4.conf.<NIC>.proxy_arp=1`) makes Linux answer for any address it
+  routes out of another interface: on a host with two interfaces in one subnet (wired
+  and Wi-Fi on the same LAN, say), that is every address of the LAN, and other devices
+  see address conflicts. The TAP side keeps interface-wide proxy ARP, since only the
+  guest is behind it. 🟡 (the per-address form has not yet been re-run end to end)
 - A **true L2 bridge** (`br0` enslaving the NIC + `tap0`, host IP moved onto `br0`)
   also works and is more "native", but it momentarily blips the host's connectivity
   and risks the uplink for no functional gain here. The Amiberry/guest config is
@@ -41,11 +48,15 @@ It builds on the conceptual [networking page](../how-it-works/networking.md) (th
 
 ## Step 1 — Host side (proxy-ARP routed TAP)
 
-Run the helper (idempotent; autodetects the NIC). Its built-in default guest address is only an example — **always set `GUEST_IP` to the address you chose for your LAN**, e.g. `GUEST_IP=192.0.2.38`:
+Run the helper (idempotent). Its built-in default guest address is only an example — **always set `GUEST_IP` to the address you chose for your LAN**, e.g. `GUEST_IP=192.0.2.38`, and name the wired LAN interface in `ETH`:
 
 ```sh
-sudo sh tools/host-net/amix-lan-up.sh
+sudo env GUEST_IP=192.0.2.38 ETH=<wired interface> sh tools/host-net/amix-lan-up.sh
 ```
+
+Without `ETH` the script takes the interface of the default route, and stops with a
+message asking for `ETH=` when that interface is wireless or when another interface
+also has an address in the guest's subnet, rather than guess.
 
 That is exactly equivalent to (LAN NIC shown as `$ETH`):
 
@@ -58,9 +69,10 @@ sudo ip addr replace 192.0.2.17/32 dev tap0          # host-side anchor (host<->
 # route the guest's /32 at the tap, with a same-subnet source
 sudo ip route replace 192.0.2.38/32 dev tap0 src 192.0.2.17
 
-# make the host a proxy-ARP router
+# make the host a proxy-ARP router: for the guest's address only on the LAN side,
+# interface-wide on the tap (net.ipv4.conf.$ETH.proxy_arp stays 0)
 sudo sysctl -wq net.ipv4.ip_forward=1
-sudo sysctl -wq net.ipv4.conf.$ETH.proxy_arp=1
+sudo ip neigh replace proxy 192.0.2.38 dev $ETH
 sudo sysctl -wq net.ipv4.conf.tap0.proxy_arp=1
 
 # allow forwarding past Docker's FORWARD=DROP policy (DOCKER-USER if Docker present)
@@ -251,6 +263,19 @@ python3 tools/host-net/amixsh.py 'ifconfig aen0' 'netstat -rn' 'domainname' \
 telnet 192.0.2.38                     # -> Amix login: prompt
 ```
 
+Check the host's ARP answers from another Linux machine on the LAN (iputils `arping`;
+other `arping` versions spell the interface option `-i`):
+
+```sh
+arping -I <interface> -c 3 192.0.2.38    # every reply from ONE MAC: the host's wired LAN interface
+arping -I <interface> -c 3 192.0.2.99    # an unused address: no reply at all
+arping -I <interface> -c 3 192.0.2.1     # another device: replies only from that device's own MAC
+```
+
+On the host, `ip neigh show proxy` lists the guest's address on the LAN interface
+and nothing else of ours, and `sysctl net.ipv4.conf.<LAN interface>.proxy_arp` is `0`. 🟡
+(the expected results; not yet run with the per-address form)
+
 SVR4 `ping host` is single-shot ("`host is alive`" / "`no answer`"), not a
 continuous stream — handy for scripting. ✅
 
@@ -262,10 +287,14 @@ continuous stream — handy for scripting. ✅
   `shutdown -i6`, `aen0` comes up at `.38`, the route is set, `domainname` is empty,
   and `ping www.google.com` works — with zero manual steps. ✅
 - **Host:** the `ip`/`sysctl`/`iptables` state is not persistent. Install the
-  service so it's recreated at boot:
+  service so it's recreated at boot, and pin the wired interface and your addresses
+  in a drop-in (at boot the default route may not be on the wired interface yet):
   ```sh
   sudo install -m 755 tools/host-net/amix-lan-up.sh tools/host-net/amix-lan-down.sh /usr/local/sbin/
   sudo install -m 644 tools/host-net/amix-lan.service /etc/systemd/system/
+  sudo mkdir -p /etc/systemd/system/amix-lan.service.d
+  printf '[Service]\nEnvironment=ETH=<wired interface> GUEST_IP=192.0.2.38 TAP_ANCHOR=192.0.2.17\n' |
+      sudo tee /etc/systemd/system/amix-lan.service.d/local.conf
   sudo systemctl daemon-reload && sudo systemctl enable --now amix-lan.service
   ```
 
@@ -298,4 +327,7 @@ Useful for automation / agents driving Amix without a visible window:
 - Amix boot path: `/etc/inittab` (`S2::sysinit:/etc/sysinit`), `/etc/sysinit` (`domainname \`cat /etc/domain\``), `/etc/init.d/inetinit`, `/etc/inet/network-config` (`ifconfig aen0 \`uname -n\` up -trailers`), `/etc/inet/rc.inet` — read directly off the running system.
 - DNS enable: `/etc/netconfig.DNS` (adds `/usr/lib/resolv.so`), `/usr/lib/libsockdns.so` — present on the install; the `domain`-append behaviour matches [amigaunix.com networking notes](https://www.amigaunix.com/doku.php/networking) and was confirmed via a `gethostbyname()` probe.
 - DNS-enable slow-boot + literal-IP fix: The A4091-on-Amix project — networking investigation, 2026-06-07 (reproduced locally ✅) — instrumented `/etc/rc2` per-script timing on Amix 2.1c under Amiberry, isolating the ~180 s hang to the two boot-time `gethostbyname()` calls; boot **210 s → 29 s** after the fix. `/etc/rc2.d/S69inet` (hardlinked to `/etc/init.d/inetinit`), `/etc/inet/network-config` (`ifconfig aen0 \`uname -n\`` → literal IP), `/etc/inet/rc.inet` (default route runs *after* `network-config`) — read directly off the running system; `for f in /etc/rc2.d/S*` glob confirms backup S\* files execute at boot.
+- LAN-side proxy ARP for the guest's address only: the `proxy` form of iproute2's `ip neigh`
+  (`ip-neighbour(8)`). The scripts were checked with `sh -n`, ShellCheck and a dry run against
+  stubbed `ip`/`sysctl`/`iptables`, not yet on a host 🟡.
 - Research brief §11 (networking) and the conceptual [networking page](../how-it-works/networking.md).

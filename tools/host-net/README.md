@@ -6,11 +6,24 @@ keep it that way across reboots. They encode exactly the setup verified in
 [the LAN networking guide](../../docs/getting-started/networking-on-the-lan.md)
 (first-hand, 2026-06: Amiberry 8.1.6, Amix 2.1 / SVR4.0). ✅
 
-## The model: routed TAP + proxy-ARP (not an L2 bridge)
+## The model: routed TAP + per-address proxy ARP (not an L2 bridge)
 
 Amiberry 8.x can attach its emulated **A2065** Ethernet card to a Linux **TAP**
 device (`a2065=tap0`). We then make the host a tiny **proxy-ARP router** between
 that TAP and the LAN NIC, and route the guest's reserved `/32` at the TAP.
+
+On the LAN side the host answers ARP **for the guest's address only**, on the one
+interface `ETH` (`ip neigh replace proxy $GUEST_IP dev $ETH`); `net.ipv4.conf.$ETH.proxy_arp`
+stays `0`. Interface-wide proxy ARP there would make Linux answer for any address it
+routes out of another interface, so a host with two interfaces in the same subnet
+(wired and Wi-Fi on one LAN, say) would answer for every address on the LAN and other
+devices would see address conflicts. The TAP keeps interface-wide proxy ARP so the
+guest's ARP for the gateway gets an answer; only the guest is behind it. 🟡 (not yet
+re-run end to end on a host in this form)
+
+`ETH` should be set. Without it, `amix-lan-up.sh` takes the default-route interface and
+stops, asking for `ETH=`, when that interface is wireless or another interface also has
+an address in the guest's subnet.
 
 Why routed rather than a true L2 bridge:
 
@@ -28,8 +41,8 @@ Why routed rather than a true L2 bridge:
 
 | File | Purpose |
 |---|---|
-| `amix-lan-up.sh`   | Idempotent host setup: TAP, proxy-ARP, ip_forward, `/32` route, forward rules (Docker-aware). |
-| `amix-lan-down.sh` | Full teardown. |
+| `amix-lan-up.sh`   | Idempotent host setup: TAP, proxy ARP for the guest's address, ip_forward, `/32` route, forward rules (Docker-aware). |
+| `amix-lan-down.sh` | Full teardown; finds the LAN interface from what `amix-lan-up.sh` left, and clears an interface-wide `proxy_arp=1` that older versions set. |
 | `amix-lan.service` | systemd unit so the host side comes up at boot (after `docker.service`). |
 | `amixsh.py`        | Run shell commands on Amix over telnet, scripted (no PTY). Good for automation / agents. [Limits and exit status](#amixshpy-limits-and-exit-status) below. |
 | `test-amixsh.py`   | Tests for `amixsh.py`'s exit status against a fake login and shell. Needs no Amix box, and so tests the script's logic, not a real tty. |
@@ -42,7 +55,8 @@ Why routed rather than a true L2 bridge:
 |---|---|---|
 | `GUEST_IP` | `amix-lan-up.sh`, `amix-lan-down.sh` | the Amix guest's address on your LAN (`192.0.2.38`) |
 | `TAP_ANCHOR` | `amix-lan-up.sh` | a host-side `/32` on the TAP, any address unused on your LAN (`192.0.2.17`) |
-| `ETH`, `TAP`, `TAP_OWNER` | `amix-lan-up.sh` | LAN uplink (autodetected from the default route), TAP name (`tap0`), TAP owner (the invoking user) |
+| `ETH` | `amix-lan-up.sh`, `amix-lan-down.sh` | the wired LAN interface; set it (unset: the default-route interface, refused when unsafe, see above) |
+| `TAP`, `TAP_OWNER` | `amix-lan-up.sh` (`TAP` also `amix-lan-down.sh`) | TAP name (`tap0`), TAP owner (the invoking user) |
 | `TAP_MTU` | `amix-lan-up.sh` | the TAP's MTU (`1400`); the script's comment says what that rests on and what is unmeasured |
 | `AMIX_HOST`, `AMIX_PORT`, `AMIX_USER`, `AMIX_PASS` | `amixsh.py`, `amixput.py`, `amixsync.py` | the guest to talk to (`192.0.2.38`), FTP port, login (`root` / a placeholder password) |
 | `AMIX_TIMEOUT` | `amixsh.py` | seconds to wait for each command (`60`) |
@@ -86,7 +100,7 @@ then `AMIX_HOST=192.0.2.50 python3 amixsh.py 'uname -a'`.
 
 ```sh
 # 1. Host side (once per boot, or install the service below):
-sudo sh amix-lan-up.sh
+sudo env GUEST_IP=192.0.2.38 ETH=<wired interface> sh amix-lan-up.sh
 
 # 2. Start Amiberry with the A2065 on the TAP. In your .uae config:
 #       a2065=tap0
@@ -106,11 +120,29 @@ AMIX_HOST="$GUEST_IP" python3 amixsh.py 'ifconfig aen0' 'ping www.google.com'
 sudo cp amix-lan-up.sh amix-lan-down.sh /usr/local/sbin/
 sudo chmod 755 /usr/local/sbin/amix-lan-up.sh /usr/local/sbin/amix-lan-down.sh
 sudo cp amix-lan.service /etc/systemd/system/
+# pin the wired interface and your addresses in a drop-in:
+sudo mkdir -p /etc/systemd/system/amix-lan.service.d
+printf '[Service]\nEnvironment=ETH=<wired interface> GUEST_IP=192.0.2.38 TAP_ANCHOR=192.0.2.17\n' |
+    sudo tee /etc/systemd/system/amix-lan.service.d/local.conf
 sudo systemctl daemon-reload
 sudo systemctl enable --now amix-lan.service
 ```
 
-Undo: `sudo systemctl disable --now amix-lan.service` then `sudo sh amix-lan-down.sh`.
+Undo: `sudo systemctl disable --now amix-lan.service` (it runs `amix-lan-down.sh`).
+
+## Check the ARP answers
+
+From another Linux machine on the LAN (iputils `arping`; other versions use `-i` for
+the interface):
+
+```sh
+arping -I <interface> -c 3 192.0.2.38   # replies, all from one MAC: the host's wired interface
+arping -I <interface> -c 3 192.0.2.99   # an address nobody uses: no reply
+```
+
+Any other address gets no answer from the host: replies, if any, come from the device
+that owns it. On the host, `ip neigh show proxy` shows the guest's address on `ETH`
+only, and `sysctl net.ipv4.conf.$ETH.proxy_arp` is `0`.
 
 > The TAP has **no carrier until Amiberry attaches to it**, so the guest is only
 > reachable while Amiberry is running — the service just makes the routing/ARP

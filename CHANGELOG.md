@@ -2,6 +2,10 @@
 
 Started 2026-09-26.
 
+## 2026-11-13 — tools/host-net: proxy ARP for the guest's address only (16a9ebd, c982a48)
+
+The host answers ARP on the LAN only for the guest's address (an `ip neigh` proxy entry on ETH) and no longer sets interface-wide proxy_arp there, which on a host with two interfaces in one subnet answered for every address on the LAN. Without ETH, amix-lan-up.sh refuses a wireless default-route interface or a subnet shared by two interfaces; amix-lan-down.sh clears an interface-wide proxy_arp left by older versions. The unit documents a drop-in pinning ETH and TAP_OWNER (a service has no login user, so the TAP is otherwise root-owned); README and the LAN guide add an arping check. Run as the service on a host with a wired and a wireless interface in one subnet: one proxy entry, proxy_arp off on the LAN side, and the arping check as documented; guest traffic over the TAP, the ETH guard and teardown without ETH are not yet run on a host.
+
 ## 2026-11-11 — the grimoire moved to amigaux/grimoire, served at https://grimoire.amigaux.org/ (f41baa6)
 
 mkdocs.yml has the new site_url, repo_url and repo_name; every self-link in docs/ and llms-full.txt points to github.com/amigaux/grimoire (216 links in 39 files).

@@ -1365,18 +1365,20 @@ Amix's **`/bin/sh` predates POSIX** ✅. The two bites that catch driver authors
 
 This was discovered the hard way porting the [VA2000 driver](../drivers/case-studies/va2000.md): install scripts written with modern shell syntax silently misbehave ✅. The default *interactive* shell is **ksh** (with `sh`/`csh`/`tcsh` also present), but build and install scripts that run under `/sbin/sh` or `/bin/sh` must stay pre-POSIX ✅. See [the driver model](../drivers/driver-model.md) and [writing a char driver](../drivers/writing-a-char-driver.md) for the driver-build implications, including the companion rule to `rm -f` stale objects before relinking the kernel.
 
-Eight more that specifically bite installer/automation scripts ✅ (bench-proven on Amix 2.1c; the `${1:?word}` and `EXIT`-trap ones on the amigaux 1.1 images; the `false` one on a 68030 guest):
+Ten more that specifically bite installer/automation scripts ✅ (bench-proven on Amix 2.1c; the `${1:?word}` and `EXIT`-trap ones on the amigaux 1.1 images; the `false`, `: > file` and `VAR=x func` ones on a 68030 guest):
 
 - **`while read … done < FILE` runs in a SUBSHELL** — a counter incremented inside the loop reverts to its pre-loop value at `done`. Write per-iteration state to a temp file and read it back *after* the loop.
 - **An empty `set -- \`cmd\`` is a no-op on `$@`** — if the command prints nothing, `$#` keeps its *previous* value instead of going to 0. Guard with `[ -s file ]` before counting.
 - **`${1:?word}` ends at the first blank in the word** — `D=${1:?usage: box.sh dir [grep]}` is taken as the assignment `D=${1:?usage:` followed by the command `box.sh`, so the script fails with `box.sh: not found` and `D` stays empty (the 1992 `/sbin/sh`). Keep the word free of blanks, or write `[ -n "$1" ] || { echo usage >&2; exit 2; }; D=$1`.
 - **An `EXIT` trap replaces the status `exit` was given, and `$?` reads 0 inside it** — with `trap "true" 0`, `exit 3` ends with status 0; with `trap "false" 0`, with 255; `trap "echo in=\$?" 0` prints `in=0`, so saving `$?` inside the trap does not help (68030 and 68060 kernels alike). A script that cleans up in an `EXIT` trap reports success for every failing `exit`; dash and bash keep the status, so host tests miss it. Use no `EXIT` trap: clean up in a function that ends with `exit $1`, call it in place of each `exit`, and trap only the signals, e.g. `finish() { rm -rf "${LOCK:?}"; exit $1; }; trap 'finish 1' 1 2 15` … `finish 0`.
+- **`: > file` empties the file only the first time that command runs** — in a function called twice, or in a loop, the second `: > f` leaves what was written in between, so a log or state file "cleared" that way grows. The first run does create a missing file and empty an existing one. `> f`, `echo > f`, `printf … > f`, `cp /dev/null f` and an external `cat /dev/null > f` empty it every time. dash empties it every time, so host tests miss it. Use `: > file` only to create a file; to empty one in code that runs more than once, use `> file` or `echo > file`.
+- **`VAR=x func` does not pass `VAR` to a shell function** — `g() { echo "[$V]"; }; V= ; V=x g` prints `[]` (dash prints `[x]`), and `V` is unset after the call too. A prefix on an external command works (`W=y sh -c 'echo $W'` prints `y`). Pass the value as an argument, or set and export it on its own line first.
 - **`false` exits 255, not 1** — `false; echo $?` prints `255`. A script or test that compares against 1 gets it wrong; test for non-zero instead.
 - **`mkdir -p` is not idempotent** — it exits rc=2 "File exists" on an already-present leaf directory, not 0. Guard with `[ -d dir ] || mkdir -p dir`.
 - **`wc -c` LEFT-PADS its count** with spaces, so a raw `wc -c` in a numeric test fails; strip the padding (e.g. via `read`) first.
 - **The console tty truncates canonical input at ~256 characters** — long one-liners are silently cut. Push a script file and run it rather than typing a long command.
 
-And the toolbox is thin: an install **miniroot ships no `basename`/`sed`/`touch`/`date`/`wc`**. The portable substitutes are `expr` (for `basename`-style path/field work), `: > file` (for `touch`), and `set …/*; echo $#` (to count matches).
+And the toolbox is thin: an install **miniroot ships no `basename`/`sed`/`touch`/`date`/`wc`**. The portable substitutes are `expr` (for `basename`-style path/field work), `: > file` (for `touch`: to create a file, not to empty one in code that runs twice, see above), and `set …/*; echo $#` (to count matches).
 
 ### 88. Stock `sed` drops a final line that has no newline ✅ {#88-sed-drops-unterminated-line}
 
@@ -2146,3 +2148,7 @@ platform not declared `SystemV` vfork (`HasVFork YES`), so an SVR4 cf file must 
   each panic; the fixes in [amix-packages](https://github.com/jusii/amix-packages)
   `recipes/common/amix-ftruncate.c` (`cad15e4`), coreutils 5.2.1-3 (`97bbcf1`) and gtar 1.14-7
   (`cbd8c25`), passing on the bench.
+- The **`: > file` and `VAR=x func` items** of quirk 12 (first-party record, 2026-11-06) ✅: probes under the
+  stock `/bin/sh` of the 2.1c userland on an emulated 68030, three one-boot runs, compared with dash on the
+  host; amix `userland/base/test-lint.sh` (its rule against `: > file` in shipped scripts states the measured
+  behaviour), commit `843a66b`.

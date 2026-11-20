@@ -727,3 +727,8 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   (README, patches 29, 30, 32, 33, `package.sh`), the `display.d` card files and `display.d(4)` ✅; amigaux/xrtg-amix
   `552968e` `x11r6.3/hw/amix/rtg/va2000/README.md` ✅. The real-hardware rules not backed by a quirk are one
   project's practice 🟡; the `grep -e`/`\|` rule is a precaution 🟡.
+- **2026-11-06 — The 2.1 Bourne shell: `: > file` and `VAR=x func`.** Under the stock `/bin/sh`, `: > file`
+  empties the file only the first time that command runs (a second run in a function or loop leaves what was
+  written in between); `> f`, `echo > f` and the rest empty it every time ✅. `VAR=x func` does not pass `VAR` to a
+  shell function, while a prefix on an external command works ✅. Probes on an emulated 68030, compared with dash;
+  amix `userland/base/test-lint.sh` (`843a66b`). Folded into quirk 12.

@@ -738,3 +738,10 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   (disassembly of `/unix` `80a1204f…` and `fs/ufs/exp`; byte-checked random-rewrite test in emulation, stock and both
   amigaux lines). A 4-byte fix (`pea %a0@(0,%d3:l)` at `fs/ufs/exp` .text 0x8a4c) runs clean; applied from cuts
   68030-261106-73 and 68060-261106-65 ✅. Quirk 100.
+- **2026-11-06 — Stock libsocket on TCP.** GCC 14 probes against the stock `libsocket`/`libnsl` only, 2.1c userland
+  in emulation (k46 68060-261103-62; k30 too for the peek): a non-blocking `send` with too little room counts every
+  byte and drops the rest (`_s_sosend` subtracts the slice, not the write's count), `ENOMEM` with no room;
+  `recv(MSG_PEEK)` on a listener breaks every later `accept` (`EINVAL`, no system call); `SO_ACCEPTCONN` gives
+  `ENOPROTOOPT`, `SO_TYPE` works; `recvfrom` with a NULL address faults; `select` reports writable with less room
+  than the next message; `write(2)` behaves as `send`; `select`/`poll`/`FIONREAD`/`I_NREAD` are right ✅. amix pth
+  patches 0005/0006. Quirks 101 and 102, networking's porting section.

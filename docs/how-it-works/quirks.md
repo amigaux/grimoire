@@ -113,6 +113,8 @@ Each item is one line: what it is, the ✅/🟡 confidence tag carried from the 
 | 98 | **A `vfork` child that calls `signal`, `sigset` or `sigaction` breaks the parent**: libc keeps the handlers in a table in its own data, which a vfork child shares, so the parent's next delivery of that signal jumps to 0 or 1 and dies with `SIGBUS`. `xinit` built with vfork never starts X. Use `fork`; in a vfork child call only `exec*` and `_exit` | ✅ | [Quirks §98](#98-vfork-child-signal-table) |
 | 99 | **A telnet command line over the 256-byte canonical limit runs nothing and wedges the login**: a 229-byte line answered and a 269-byte line did not, and nothing later in that login answered until a reconnect. Usually there is no echo or error, only silence. Check the length on the host and split long lines | ✅/🟡 | [Quirks §99](#99-canonical-line-wedge) |
 | 100 | **A whole-page UFS write that does not start an 8 KiB block leaves that block's first pages holding old memory in the page cache** — stock ufs `rwip` creates the pages at the window's base, not where the write starts; reads then return an earlier block, zeros or another file's data until the pages are evicted, while the disk is right. Fixed in the amigaux kernels (68030-261106-73 and 68060-261106-65 on) | ✅ | [Quirks §100](#100-ufs-rwip-pagecreate) |
+| 101 | **A non-blocking `send` that meets less room than it asked for counts every byte as sent and drops the rest** — stock libsocket subtracts each slice it asked to write, not what the write took; with no room at all `send` fails with `ENOMEM`, not `EAGAIN`. `write(2)` on the same socket counts right. Use `write` when no flags are needed | ✅ | [Quirks §101](#101-libsocket-send-drops) |
+| 102 | **One `recv(MSG_PEEK)` on a listening socket breaks every later `accept` on it** — the peek gives `ENOTCONN`, then each `accept` gives `EINVAL` without asking the kernel. `poll`/`select` on a listener are harmless; a hang-up check that peeks every readable descriptor is not | ✅ | [Quirks §102](#102-peek-breaks-accept) |
 
 The rest of this page expands each item.
 
@@ -529,6 +531,38 @@ Mechanism, offsets and numbers: [networking](networking.md#tcp-lower-read-queue)
 A gotcha for **driver authors**, learned bringing up the [Z3660 ethernet driver](../drivers/z3660-ethernet-driver.md) on real hardware: if a board (or its firmware) raises a CPU interrupt level for which **Amix installs no handler**, the unacknowledged source fires continuously and **hard-locks the machine** ✅. The Z3660 firmware raises Amiga **INT6 (EXTER)** on *every* received ethernet frame, but Amix has no level-6 ethernet handler — so the moment the interface came up, normal LAN **ARP broadcast traffic stormed INT6 and instantly froze the box** (caps-lock LED dead). The whole kernel had booted to `login:` fine; only bringing the interface up triggered it.
 
 **Fix:** disable the board/firmware interrupt and **poll** the receive path instead — `z3660eth` writes the firmware's `ZZ_CONFIG_DISABLE` so INT6 is never raised, and drains RX from a clock-level `timeout()` callout ✅. Interrupt-driven RX would need a level-6 hook the firmware's model doesn't safely give Amix. The general lesson: when adding a driver, don't enable an interrupt source Amix can't service — confirm there's a handler (and an ack path) for that level, or run polled. Full story on [the Z3660 ethernet driver case study](../drivers/z3660-ethernet-driver.md).
+
+### 101. A non-blocking `send` that meets less room than it asked for drops the rest ✅ {#101-libsocket-send-drops}
+
+Measured with GCC 14 probes linked against the stock `libsocket`/`libnsl` only, on the 2.1c userland in
+emulation, loopback TCP, 2026-11-06 ✅. With 12288 bytes queued and nobody reading, a non-blocking
+`send(8192)` returned 8192, and the reader got the first 4096 of them, in order; the rest never came, not
+after waiting and not after the close. Before the peer had `accept`ed, `send(16384)` returned 16384 and
+8192 arrived. With no room at all, `send` fails with `ENOMEM` (12), not `EAGAIN` ✅.
+
+The cause is in `libsocket.so`'s `_s_sosend`: it writes the buffer in slices and after each successful
+write subtracts the slice's length, not the count the write returned, and it turns a first write that
+fails with `EAGAIN` into `ENOMEM` ✅ (disassembly). `write(2)` on the same socket in the same states
+returns the part that went and then `EAGAIN` (11), and every byte it counts arrives. Blocking sends are
+not affected ✅.
+
+**Porting rule:** on a non-blocking stream socket, use `write(2)` when no flags are needed. A `send` of
+1024 bytes or less is one stream message and goes whole or fails (a 2008-byte message with 320 bytes of
+room took nothing) ✅. GNU Pth's `send` was changed this way in amix's pth package. More socket porting
+notes: [networking](networking.md#porting-socket-code-to-the-stock-libsocket).
+
+### 102. One `recv(MSG_PEEK)` on a listening socket breaks every later `accept` on it ✅ {#102-peek-breaks-accept}
+
+On both kernel lines, a `recv(MSG_PEEK)` on a listening TCP socket gives −1 `ENOTCONN` (134); after it,
+every `accept` on that listener gives −1 `EINVAL` (22), and `truss` shows no system call made: libsocket
+refuses it itself ✅ (GCC 14 probe with the stock `libsocket`, three connections each accepted in turn; a
+fresh listener without the peek accepts both of its connections). `poll` and `select` on a listener are
+harmless ✅.
+
+A program that peeks every readable descriptor to detect a hang-up breaks its listeners this way: GNU
+Pth's `poll` did, so Python's `accept` after `poll`, or with a timeout set, failed with `EINVAL` ✅. A
+listener cannot be told apart to skip it, because `getsockopt(SO_ACCEPTCONN)` gives `ENOPROTOOPT`
+([networking](networking.md#porting-socket-code-to-the-stock-libsocket)), so leave the peek out on Amix.
 
 ## FPU & floating-point quirks
 
@@ -2190,3 +2224,7 @@ platform not declared `SystemV` vfork (`HasVFork YES`), so an SVR4 cf file must 
   measurements on the stock kernel and both amigaux kernel lines; amix `kernel/k30/tools/rwippc030.py` and
   `build-cross-kernel.sh` (`--ufs-rwip-fix`, commit `32f03e8`), `kernel/k30/CHANGELOG.md` (cut -73) and
   `kernel/port/CHANGELOG.md` (cut -65).
+- **Quirks 101 and 102, stock libsocket on TCP** (first-party record, 2026-11-06) ✅: GCC 14 probes linked
+  against the stock `libsocket`/`libnsl` only, on the 2.1c userland in emulation, k46 kernel 68060-261103-62
+  (and the k30 line for quirk 102); disassembly of `libsocket.so`'s `_s_sosend`; amix `userland/packages/pth`
+  `README.md` and patches 0005 and 0006 (pth 2.0.7-3).

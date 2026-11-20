@@ -270,6 +270,21 @@ own address completes at once (rc 0) under either flag. **Porting rule:** code w
 A `sockmod` open that fails can leave a freed queue on the STREAMS run list and panic the stock
 kernel in `queuerun` ([quirk 92](quirks.md#92-queuerun-panic)).
 
+## Porting socket code to the stock libsocket ✅ {#porting-socket-code-to-the-stock-libsocket}
+
+Measured with GCC 14 probes linked against the stock `libsocket`/`libnsl` only, on the 2.1c userland in
+emulation, loopback TCP unless said, 2026-11-06 ✅:
+
+| Call | What happens | Do instead |
+|---|---|---|
+| non-blocking `send` with less room than asked | counts every byte as sent and drops the rest; no room at all gives `ENOMEM` | `write(2)` ([quirk 101](quirks.md#101-libsocket-send-drops)) |
+| `recv(MSG_PEEK)` on a listener | `ENOTCONN`, and every later `accept` gives `EINVAL` | never peek a listener ([quirk 102](quirks.md#102-peek-breaks-accept)) |
+| `getsockopt(SO_ACCEPTCONN)` | −1, errno 99 `ENOPROTOOPT`: a listener cannot be recognised | keep track of your listeners; `SO_TYPE` works (2 `SOCK_STREAM`, 1 `SOCK_DGRAM`) |
+| `recvfrom(fd, buf, n, 0, NULL, NULL)` on a connected TCP socket | the process ends with `User BUS ERROR at 0` | `recv`, or `recvfrom` with an address |
+| `select` for write | writable even when the room is smaller than the next message (at 16064 bytes queued a 2008-byte `write` got `EAGAIN`) | on `EAGAIN` after a writable `select`, wait a little before retrying instead of spinning |
+| `write(2)` on a socket | behaves as `send`: one datagram on a connected UDP socket; against a peer that closed, the first `write` or `send` succeeds, later ones give `EPIPE` (32) and raise `SIGPIPE` | as on any Unix |
+| `select`, `poll`, `FIONREAD`, `I_NREAD` | right: every arrival reported, all bytes delivered, `FIONREAD` (`0x4004667f`) and `I_NREAD` agree | rely on them |
+
 ## NFS (server and client)
 
 Amix includes **NFS as both server and client** ✅, the SVR4-standard RPC/NFS stack. The install/boot kernel is itself NFS/RPC-capable: the on-floppy bootstrap embeds a full **NFS/RPC client string table** (confirmed by string analysis of `amix_21_boot.adf`) ✅, so network booting / network install paths are wired in at the bootstrap level.

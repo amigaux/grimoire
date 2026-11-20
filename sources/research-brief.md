@@ -719,3 +719,11 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   check as documented ✅. Started from systemd there is no login user, so the TAP is root-owned unless `TAP_OWNER` is
   set ✅. Not run on a host: guest traffic over the TAP in this form, the `ETH` refusal, and `amix-lan-down.sh` with
   `ETH` unset 🟡.
+- **2026-11-20 — Writing drivers with an LLM tool.** New pages under `docs/drivers/llm/`: a guide (what to point a
+  tool at, the build in amix's container, packaging, the test loop, reporting), an X-backend worked example on the
+  X11R6.3 server's card-neutral RTG layer, rules for real hardware, and an AGENTS.md template. Facts from amix
+  `397b868f`: `kernel/dlm/docs/abi/writing-a-module.md`, `kernel/modules/README.md`, `kernel/drivers/README.md` and
+  `va2000/README.md`, `docs/BUILDING.md`, `CONTRIBUTING.md`, `build/pkg/README.md`, `userland/packages/x11r6.3`
+  (README, patches 29, 30, 32, 33, `package.sh`), the `display.d` card files and `display.d(4)` ✅; amigaux/xrtg-amix
+  `552968e` `x11r6.3/hw/amix/rtg/va2000/README.md` ✅. The real-hardware rules not backed by a quirk are one
+  project's practice 🟡; the `grep -e`/`\|` rule is a precaution 🟡.

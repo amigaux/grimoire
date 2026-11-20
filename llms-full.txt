@@ -12108,6 +12108,7 @@ the Z3660 identity and windows behind one switch, `-DZZ9K_TARGET_Z3660`; with th
 - [`x11r6.3-amix` case study](case-studies/x11r63-zz9000.md) — the X11R6.3 `Xzz9000` server (second generation).
 - [`zz9000-amix` case study](case-studies/zz9000.md) — the ZZ9000 kernel framebuffer driver (char 49).
 - [`mesa-amix` case study](case-studies/mesa31.md) — Mesa 3.1 software GL on the R6.3 stack.
+- [Worked example: an X backend](llm/x-backend-example.md) — a new card under the X11R6.3 server's card-neutral RTG layer (x11r63 6.3-10 on), written with an LLM tool.
 - [X11 & the Desktop](../how-it-works/x11-and-desktop.md) — historical X11R4/R5, OpenLook, A2410 TIGA, quirks.
 - [The Amix driver model](driver-model.md) — `cdevsw[]`, char vs block, statically-linked drivers.
 - [Writing a char driver](writing-a-char-driver.md) — the char-driver pattern the va2000 framebuffer follows.
@@ -12866,6 +12867,706 @@ The patch disk uses a related (but distinct) self-extracting mechanism — a 1 K
 - The coreutils 5.2.1-3 and gtar 1.14-7 rebuilds (first-party record, 2026-10-30) ✅: the `stat -c %s` and `stat -f` rows on the box, `stat.c`'s run-time format assembly, `nm` of `truncate.o` in the static libc archive (`_ftruncate` T, `ftruncate` W); [amix-packages](https://github.com/jusii/amix-packages) `97bbcf1` (patch 09, the `ftruncate` replacement), `cad15e4`, `cbd8c25`.
 - The Heirloom tar and Dropbear ports (first-party record, 2026-11-01/02) ✅: the `%llo` size fields written as 0 by an unpatched Heirloom tar build on 68030 and 68060 systems in emulation, caught by the package gate's `ll`-printf check ([`amigaux/amix`](https://github.com/amigaux/amix) `userland/packages/heirloom-tar`, `b07d4cb`, on `master`); the pty probes (session leader and child pushes, `tcgetattr` and `TIOCSWINSZ` on the master, `ls -l` of the nodes, `nm -D` of the sysroot `libc.so.1`) on the 1.1 disks booted on 68030 and 68060 kernels in emulation, behind Dropbear's patch 05 (`userland/packages/dropbear`, `51ba153`, on `master`).
 - The **static `vfork` and the X11R6.3 Imake trap** (first-party record, 2026-11-02) ✅: the `xinit` cores on a real A4000D and the stock `libc.so.1` disassembly behind [quirk 98](../how-it-works/quirks.md#98-vfork-child-signal-table); `Imake.tmpl`; the package audit and the x11r63 fix ([`amigaux/amix`](https://github.com/amigaux/amix) `userland/packages/x11r6.3`, `c3abeff`, `443fe46`, on `master`).
+
+
+================================================================================
+# FILE: docs/drivers/llm/driver-guide.md
+================================================================================
+
+---
+title: Writing an Amix Driver with an LLM Tool
+summary: What to give an LLM coding tool (Claude Code, Codex and the like) before it writes an Amix driver — the documents, the build container, packaging with apkg, the emulation-first test loop and how to report results — for kernel modules, STREAMS and character drivers, and X backends.
+status: draft
+---
+
+# Writing an Amix driver with an LLM tool
+
+This page is for a developer who wants to write a driver for Amiga UNIX (Amix) with an LLM coding
+tool such as Claude Code or Codex doing much of the typing. Such a tool writes plausible code for
+any Unix. Amix is an SVR4.0 kernel from 1990 with Amiga-specific traps, and much of the lore about it
+is wrong, so the tool needs grounded documents more than it needs prompts. Give it the documents
+below, the build container and a test loop it can run itself. It will then do most of the work, and
+you check what it claims.
+
+The same approach covers three kinds of driver:
+
+- a **kernel module**: a character, block or STREAMS driver loaded into a running kernel;
+- an **X backend**: a card driver inside the X server, in user space, on top of a kernel driver
+  that gives a device node;
+- a **user-space tool or library** for a device, shipped as a package.
+
+The companion pages:
+
+- [Worked example: an X backend](x-backend-example.md), a new card under the X11R6.3 server's RTG
+  layer;
+- [Real hardware with an LLM tool](real-hardware.md), for a device that cannot be emulated;
+- [An AGENTS.md for a driver repository](agents-template.md), a template to copy into your
+  repository so the tool follows these rules every session.
+
+## 1. What to point the tool at
+
+Start the tool's session by having it read these, in this order, and tell it to name the page behind
+each platform fact it uses.
+
+| Source | What it gives |
+|---|---|
+| This site's [`llms.txt`](https://github.com/amigaux/grimoire/blob/master/llms.txt), then [`llms-full.txt`](https://github.com/amigaux/grimoire/blob/master/llms-full.txt) | The map of these pages, then the whole site in one file to search |
+| [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) | Every fact with its source and confidence tag |
+| [Driver model](../driver-model.md), [loadable modules](../loadable-modules.md), [character driver](../writing-a-char-driver.md), [STREAMS driver](../writing-a-streams-driver.md), [Zorro AUTOCONFIG](../zorro-autoconfig.md), [X11 RTG drivers](../x11-rtg-drivers.md), [toolchain](../toolchain.md) | How Amix drivers work, and the kernel facts a module author needs |
+| [Quirks](../../how-it-works/quirks.md), [emulation fidelity](../../how-it-works/emulation-fidelity.md), [major-number registry](../../reference/major-number-registry.md) | The traps, what an emulator does and does not reproduce, and which majors are free |
+| amix [`kernel/dlm/docs/`](https://github.com/amigaux/amix/tree/master/kernel/dlm/docs): `spec/` (from `00-overview.md`), `abi/writing-a-module.md`, `abi/ddi.md`, `contracts/` | The module system's specification, how to build a module with the ABI kit, every kernel name a module may use, and the contracts a module meets ✅ |
+| amix [`kernel/modules/`](https://github.com/amigaux/amix/tree/master/kernel/modules) | Example modules: `monsw` (the worked example, a demand-class character driver), `ramdisk` (a root-class block driver), `random` (character), `zz9kbus` and `zz9ksvc` (one module calling another) ✅ |
+| amix [`kernel/drivers/`](https://github.com/amigaux/amix/tree/master/kernel/drivers) | Hardware drivers as modules: `a4091`, `z3660scsi`, `z3660eth` and `xsurf` as source, and pinned forks (`cdfs`, `gayle-ide`, `paula`, `va2000`, `z3660rtg`) ✅ |
+| amix [`build/pkg/README.md`](https://github.com/amigaux/amix/blob/master/build/pkg/README.md) and [`docs/BUILDING.md`](https://github.com/amigaux/amix/blob/master/docs/BUILDING.md) | The package recipe format and the build ✅ |
+
+Tell the tool what the tags mean: ✅ is verified (primary source, repository source or reproduced),
+🟡 is reported but not checked first-hand, 🔴 is unverified or disputed. It may rely on ✅, must say
+when it relies on 🟡, and must never raise a tag itself. A fact it cannot find anywhere is a question
+to answer by experiment, not something to assume from Linux or the BSDs.
+
+## 2. Which kind of driver
+
+### A kernel module
+
+A module is one ELF relocatable object built with the ABI kit of one kernel line: `k30` for the
+68030, `k46` for the 68040 and 68060. One source gives two objects and two packages ✅. The kit's
+`sample/hello` is the template, and a driver uses `MOD_DRV_WRAPPER` with its `cdevsw` or `bdevsw`
+row in `<prefix>_drvdata[]`; a STREAMS driver fills only `d_str` ✅. The `Master` file gives the
+module's class (`boot`, `demand` or `root`), its majors (each registered to its name in the kit's
+registry) and its `$match` for a board ✅. `kernel/dlm/docs/abi/writing-a-module.md` has the whole
+form.
+
+The facts an LLM gets wrong unless told ✅ (the module guide and the
+[loadable-modules page](../loadable-modules.md#kernel-facts-a-module-or-any-driver-author-needs)):
+
+- `_load` finds and sets up the board and returns `ENXIO` when there is none, leaving nothing
+  behind; `_unload` undoes everything; `_halt` stops a board that can interrupt or write memory.
+- A level-6 interrupt handler calls no kernel function: it acknowledges, masks and flags, and the
+  work runs at level 4 or below.
+- A STREAMS open runs at level 4, so a self-test that waits there for a level-2 interrupt by
+  spinning never sees it.
+- The console goes through `cons_hook_set`, never `conputc`.
+- There is no DMA interface in DDI v1.0: never give a board the address of the module's own memory.
+- A module image is at most 256 KiB, and one `kmem_alloc` at most 256 KiB.
+- On k46, a framebuffer that a user maps is registered with `DDI_FB_REGISTER` from `_load`.
+- Headers are included by their path in the kit's stock tree, never by a relative path.
+
+### An X backend
+
+An X backend is a card driver inside the X server. Since x11r63 6.3-10 the `Xrtg` server has a
+card-neutral RTG layer, and a card is one `rtgCardOps` record plus a card file for `xstart` ✅. It
+needs a kernel driver for the card that gives a device node, `mmap` of the framebuffer and the
+ioctls the backend uses. The [worked example](x-backend-example.md) goes through it.
+
+### A user-space tool or library
+
+A package under `userland/packages/<name>/`, with its facts in `package.sh` and its payload in a
+hand-written `prototype`; userland builds with GCC 14 ✅ (`build/pkg/README.md`).
+
+## 3. The build: amix's container, not your own toolchain
+
+Build inside amix's published build container. Don't install a cross compiler on your host, and
+don't let the tool build one. The container holds both cross compilers at their pins ✅:
+
+- **gcc-cross-amix**, the period GCC 2.7.2.3 (`m68k-cbm-sysv4`), for kernel space: kernels,
+  modules, drivers;
+- **gcc14-cross-amix**, GCC 14, for userland, with the Commodore system files as its sysroot.
+
+The steps, on Linux x86-64 with docker ✅ (`docs/BUILDING.md`):
+
+```sh
+git clone https://github.com/amigaux/amix.git && cd amix
+system/fetch-amix-system ../amix-system
+make tools SYSTEM=../amix-system      # pulls the published images by digest (or TOOLS_FROM_SOURCE=1)
+make kit   SYSTEM=../amix-system      # the ABI kits, out/kit/{k30,k46}
+```
+
+Then build only your part: `make modules`, `make drivers/<name>` or `make recipes/<name>` ✅. Each
+step runs in the container as you, with the checkout at `/src`; the fixed path keeps the period
+compiler, which cannot remap paths, from building your checkout's location into its bytes ✅. So two
+builds of one commit give the same bytes, and a result someone else reports can be rebuilt exactly.
+`DIST_HOST=1` runs the steps on the host for development, with whatever toolchains it finds; a
+release is built in the container ✅.
+
+Shape your work as an amix directory, copying the nearest example:
+
+| You write | Shape | Example |
+|---|---|---|
+| a generic module | `kernel/modules/<name>/`: `src/`, `module/{keys,Master,Makefile,VERSION}`, `pkg/`, `man/`, `test/` | `kernel/modules/monsw` ✅ |
+| a hardware driver kept in amix | `kernel/drivers/<name>/` with `module/` and `pkg/` | `kernel/drivers/xsurf` ✅ |
+| a driver in your own repository | `kernel/drivers/<name>/` with a README, `pkg/` and `<name>.pin` (`<git URL> <40-hex commit>`) | `kernel/drivers/va2000` ✅ |
+| a userland package | `userland/packages/<name>/package.sh`, `prototype`, `patches/` | `userland/packages/grep` ✅ |
+
+A new hardware driver is also added to `DRIVERS` in `build/dist.sh` ✅. The host tests need no Amiga
+and no cross compiler: `make -C build test`, `make -C build check-packages` after a recipe change, and
+a directory's own tests (`make -C kernel/dlm test`) ✅ (`CONTRIBUTING.md`). The kit's checker,
+`modcheck.py`, names each rule a module breaks, and the module core makes the same refusals at load
+time ✅.
+
+## 4. Packaging with apkg
+
+- **A module** ships as two kernel-space packages, `<name>-k30` and `<name>-k46`, with the object at
+  `/etc/conf/mod.d/<name>` and its defaults at `/etc/conf/modreg.d/<name>` ✅. A driver directory's
+  `pkg/build.sh` is three lines around `build/pkg/common/kdrv.sh` ✅. On the box, `kbootset build`
+  then `kbootset commit` put it into the next boot generation, and the core loads only modules of
+  the booted generation's manifest, checked by SHA-256, unless the boot menu's development load is
+  on ✅. After a transaction that changes a kernel-space package, apkg runs `kbootset build && kbootset
+  commit` itself when `bootset=auto`, the default ✅ (`spec/40-generations-and-composer.md`).
+- **A userland package** is rolled from `package.sh`: `PKG` at most 9 characters, because stock
+  `pkgadd` drops longer names without a word; `TOOLCHAIN=gcc14`, or `period` for a tool that must link
+  only the stock libraries; `CONFFILES` for files an administrator edits ✅ (`build/pkg/README.md`).
+- **A package you built** goes onto a test box by FTP and in with the stock tool,
+  `pkgadd -d <file>.pkg <PKG>`, as apkg itself is bootstrapped ✅. Released packages come from the
+  repository with `apkg install`. See [package management](../../how-it-works/package-management.md)
+  and [the repository format](../../how-it-works/package-repository.md).
+- **A display card** also ships its card file, `/etc/display.d/<card>`, in the driver's package, so
+  `xstart` can find it ✅ ([worked example](x-backend-example.md#the-card-file)).
+
+## 5. The test loop: emulation first
+
+Let the tool run the whole loop itself, in this order:
+
+1. **Host tests.** Logic that does not need the hardware runs on the build host. Where the board
+   cannot be emulated, test the driver against a software model of the device, as the VA2000 card
+   driver's harness does ✅ ([worked example](x-backend-example.md#testing)).
+2. **Build** in the container, and read the checker's output.
+3. **Install and boot in an emulator** where the hardware can be emulated. Amiberry 8.3.0 or newer
+   runs and installs Amix, with the A3000's SCSI disk and tape, A2065 networking and an A4091 ✅
+   ([Amix on Amiberry](../../getting-started/emulation-amiberry.md)). Know what the emulator does
+   not reproduce ([emulation fidelity](../../how-it-works/emulation-fidelity.md)). Even for a board
+   that cannot be emulated, the emulator still tests the package's install and a boot with the
+   module present and no board, as the VA2000 packages are tested ✅.
+4. **Drive the box from the host**: [`tools/host-net/`](https://github.com/amigaux/grimoire/tree/master/tools/host-net/)
+   has `amixsh.py` (scripted commands over telnet, with an exit status) and `amixput.py` (upload by
+   FTP), and [`tools/amishot.sh`](https://github.com/amigaux/grimoire/blob/master/tools/amishot.sh) takes an Amiberry screenshot ✅.
+   Keep each command line under about 250 characters: a telnet line over the tty's 256-byte limit
+   runs nothing and wedges the login ✅ ([quirk 99](../../how-it-works/quirks.md#99-canonical-line-wedge)).
+5. **Real hardware** last, and only under [the rules for real hardware](real-hardware.md).
+
+Have the tool say, for each result, where it ran. "Passes in emulation" and "runs on the card" are
+different claims, and a driver's README should keep them apart, as the VA2000 driver's does: run on a
+real card on the 68040/68060 line, with a list of what has not yet run ✅.
+
+## 6. How to report
+
+A report, whether from you or from the tool, says:
+
+- **what ran**: the commit of your driver, the amix commit, the package versions;
+- **where**: the emulator and its version and config, or the machine (model, CPU, accelerator,
+  kernel line and version, the slot the board is in);
+- **the exact commands and their output**, cut to what matters;
+- **the result**, tagged: ✅ reproduced, 🟡 seen once, 🔴 unexplained;
+- **what was not run**, so the next person knows where the edge is.
+
+Send bugs, hardware support and feature requests as an issue with one of the forms at
+[github.com/amigaux/amix/issues/new/choose](https://github.com/amigaux/amix/issues/new/choose), questions to its
+[Discussions](https://github.com/amigaux/amix/discussions), and changes as a pull request: one topic
+each, MIT, no CLA or sign-off line, and CI must pass ✅ (`CONTRIBUTING.md`). The privacy check in CI
+refuses Commodore system files, Kickstart ROMs, disk and card images and large binaries ✅. A new
+platform fact, or a correction to this site, goes to
+[amigaux/grimoire](https://github.com/amigaux/grimoire) as an issue or pull request under its
+[`AGENTS.md`](https://github.com/amigaux/grimoire/blob/master/AGENTS.md): with its source and
+confidence tag.
+
+## See also
+
+- [Worked example: an X backend](x-backend-example.md)
+- [Real hardware with an LLM tool](real-hardware.md)
+- [An AGENTS.md for a driver repository](agents-template.md)
+- [Loadable modules](../loadable-modules.md) and [toolchain](../toolchain.md)
+- [Writing for LLM consumers](../../contributing/writing-for-llms.md), how this site is written for tools
+
+## Sources
+
+- amix `kernel/dlm/docs/README.md` and `kernel/dlm/docs/abi/writing-a-module.md` (the kit, `Master`
+  keys, the driver wrapper, the module rules, shipping a module), `kernel/dlm/docs/spec/40-generations-and-composer.md`
+  (kbootset, apkg integration), `kernel/modules/README.md`, `kernel/drivers/README.md`,
+  `kernel/drivers/va2000/README.md`, `build/pkg/README.md`, `build/dist.sh` (`DRIVERS`),
+  `docs/BUILDING.md`, `CONTRIBUTING.md` and `userland/pkgtools/README.md`, at amix `397b868f`, read
+  2026-11-20 ✅.
+- This site's pages linked above, with their own sources; quirk 99 for the line limit ✅.
+
+
+================================================================================
+# FILE: docs/drivers/llm/x-backend-example.md
+================================================================================
+
+---
+title: "Worked Example: an X Backend for the RTG Layer"
+summary: How a new graphics card gets an X server on Amix — a card driver under the X11R6.3 server's card-neutral RTG layer (x11r63 6.3-10 and later), the rtgCardOps record, the card file for xstart, the kernel driver it sits on and how it is tested — with the VA2000 and ZZ9000/Z3660 backends as patterns.
+status: draft
+---
+
+# Worked example: an X backend for the RTG layer
+
+This is the [LLM driver guide](driver-guide.md) applied to one job: X on a graphics card that Amix
+has no X server for yet. Since x11r63 6.3-10, the package's one server, `Xrtg`, has a card-neutral
+RTG layer, and a card is added by writing one record of operations, not a server ✅. Two cards show
+the pattern: the MNT ZZ9000 and the Z3660's RTG (one driver), and the MNT VA2000 (a driver kept in a
+fork of its own) ✅.
+
+Everything on this page is ✅ from the x11r6.3 package's README and patches in amix
+`userland/packages/x11r6.3`, the card files and READMEs of amix `kernel/drivers/z3660rtg` and
+`kernel/drivers/va2000`, amix-base's `display.d(4)`, and the VA2000 card directory's README in the
+[amigaux/xrtg-amix](https://github.com/amigaux/xrtg-amix) fork, unless a line says otherwise.
+
+## The stack
+
+From the hardware up:
+
+| Layer | Where | What it does |
+|---|---|---|
+| Kernel driver | a module, `/dev/<card>` | finds the board, gives `mmap` of the framebuffer (and the registers, where the server drives them) and the card's ioctls |
+| Card driver | `programs/Xserver/hw/amix/rtg/<card>/` in the X tree | one `rtgCardOps` record: probe, modes, set up and tear down the hardware, and the blitter's fill, copy and flush |
+| RTG layer | `rtg/rtgInit.c`, `rtgscreen.c`, `rtgdraw.c`, `rtgcards.c` | the screen on X's own 16-bit framebuffer code (cfb16), CPU fills and copies, the box order of a region copy, the direct PutImage, and when to call the card |
+| Server | `Xrtg`, also installed as `Xzz9000` and `X` | the X11R6.3 server with the Amiga DDX (`hw/amix`): input, the screen manager, the monitor switch |
+| Start-up | amix-base's `xstart`, `/etc/display`, `/etc/display.d/<card>` | which card is there, which server to run on it, with which arguments |
+
+The layer runs cfb16 on the card's mapped framebuffer, so a card driver has no drawing code of its
+own beyond fill and copy. A card without a blitter leaves those out, and the layer draws everything
+on the CPU.
+
+## The card record
+
+`rtg.h` (patch 29) declares the record, version `RTG_CARD_VERSION` 1:
+
+| Field | What the card gives |
+|---|---|
+| `name`, `device`, `modes` | `-card`'s name (`"va2000"`), the device for messages, the mode list for messages |
+| `caps` | depth and bits per pixel (16), the TrueColor masks and bits per RGB value, `-blitmin`'s default, and flags: `RTG_CAP_BLITTER` (fill and copy drive a blitter), `RTG_CAP_USERREGS` (the card's registers are mapped into the server), `RTG_CAP_NOMOVE16` (no move16 into this framebuffer) |
+| `probe()` | is the card there? Open, ask, close, with no side effects that last |
+| `setMode(name)`, `modeSize(&w, &h)` | select `-mode WxH` for the next `initHW`, and report the selected size |
+| `initHW(pRTG)` | open the device, set the mode, map the framebuffer, and fill in the screen record (base, pitch, size, depth, the device fd for the monitor switch); `FALSE` means no screen and everything undone |
+| `closeHW(pRTG)` | undo `initHW`, also at a server reset |
+| `fillBox`, `copyBox` | one box each; the layer orders the boxes of a region, and copies may overlap |
+| `flush(pRTG)` | return when every queued fill and copy has finished on the card |
+| `monitorSwitch(fd, which)` | the monitor to the card or back to the Amiga picture; `NULL` for none |
+
+The contract the card keeps:
+
+- `fillBox` and `copyBox` may queue and return early. The layer calls them only for areas of
+  `rtgBlitMin` pixels or more, and flushes before any CPU access the queue could meet and before
+  every screen entry point returns, so outside the layer the queue is always empty.
+- A hook that returns `FALSE` has taken nothing, and the layer draws that operation on the CPU.
+- A card whose blitter fails its self-test in `initHW` clears `RTG_CAP_BLITTER` in its caps, and the
+  layer reads the caps again after `initHW`. A card that loses its blitter later draws what it still
+  holds with `rtgCpuFill`/`rtgCpuCopy` and sets `rtgBlitMin` to 0.
+- How the monitor switch passes its argument is the card's business: the ZZ9000 driver's ioctl reads
+  an `int`, the VA2000 driver's an `unsigned short`. An `int` sent to the VA2000 reads as 0 on m68k.
+
+Choosing the card: `-card NAME`, else the server's name (`Xzz9000` means the ZZ9000), else, with
+`-card auto` or under `Xrtg` or `X`, the first card in `rtgCards[]` whose probe succeeds. A card the
+server has no driver for stops it with the list of cards. `-dev PATH` names the device node, for a
+machine with two cards (a ZZ9000 beside a Z3660 is `/dev/zz9001`). A card's probe and `initHW` open
+`rtgCardDevice(card)`, never a fixed path, so `-dev` reaches them (patch 33).
+
+## Two patterns
+
+**ZZ9000 and Z3660** (`rtg/zz9000/`, patch 30). The device, mode, framebuffer map and blitter
+queue sit behind `zz9000CardOps`. The blitter is reached through the kernel driver, which takes a
+batch of operations in one `ZZ9KIOC_BLITS` ioctl. The monitor switch is an `int` ioctl. It is the
+pattern for a card whose kernel driver owns the blitter.
+
+**VA2000** (`rtg/va2000/`, from the xrtg-amix fork at a pin). It is the pattern for a card the
+server drives from user space:
+
+- the driver maps two windows, the 4 KB register page and the mode's framebuffer, each checked
+  against the mode and the board's aperture (4 MB in Zorro II, 32 MB in Zorro III, from
+  `SVGAIOCGetFBufSize`); a mode that does not fit is refused;
+- it writes the mode registers from user space, in the order of the card's older X11R5 driver;
+- every blitter wait is bounded (500000 status reads, about 100 ms), and a wait that reaches the
+  bound gives up the blitter for the rest of the server's life;
+- a self-test at every `initHW`: the blitter idle, and a 1x1 fill that finishes and appears;
+- its caps carry `RTG_CAP_NOMOVE16`, because move16 bursts are not proven on the card's Zorro III bus;
+- its probe takes a node as a VA2000 only if it answers `VA2IOC_GETFW`, which every version of the
+  VA2000 kernel driver answers and no other driver does, and it refuses before mapping or writing
+  anything otherwise.
+
+The VA2000's card files are `va2000.h` (memory map, ioctls, mode records, registers), `va2000hw.c`
+(the record, modes, probe, mappings, mode registers, monitor switch), `va2000blit.c` (fill, copy,
+flush, the bounded wait, the self-test) and an `Imakefile` that builds `libva2000.a`.
+
+## How the package takes a card in
+
+A card driver kept in its own repository goes into the X build without a patch to its files:
+
+1. The package's `package.sh` names it in `FORKDIRS`, a triple of pin file, path in the fork and path
+   in the tree:
+   `userland/packages/x11r6.3/xrtg-amix.pin x11r6.3/hw/amix/rtg/va2000 programs/Xserver/hw/amix/rtg/va2000`.
+   The pin file is one line, `<git URL> <40-hex commit>`; the build fetches that commit by hash and
+   copies the directory in after unpacking and before the patches ✅ (`build/pkg/README.md`).
+2. A patch (patch 32 for the VA2000) wires it in: the card in `rtg/Imakefile`'s `SUBDIRS`,
+   `-DRTG_<CARD>` in `RTGCARDS`, the card's library after the rtg library in the server's
+   `Imakefile`, and the name in the `-card` usage line. `rtgcards.c` lists each card's record under
+   `#ifdef RTG_<CARD>`, in the order `-card auto` probes them; the ZZ9000 comes first, then the
+   VA2000.
+3. `make recipes/x11r6.3` builds the package in the container. A change to the card's files is a
+   change in its repository and a new pin.
+
+The whole server compiles under the package's GCC 14 strict gate: no implicit declarations, no
+pointer and integer conversions, `-mno-strict-align` on every compile line. The VA2000 files also
+compile clean with `-Wstrict-prototypes`.
+
+## The card file
+
+The card's kernel-driver package installs `/etc/display.d/<card>`, which tells `xstart` how to
+find the card and run its server (`display.d(4)`). Which card is used, and in which mode, is in
+`/etc/display` (`card auto`, or `card va2000`). The VA2000's file:
+
+```text
+# /etc/display.d/va2000 -- the MNT VA2000 RTG card (display.d(4))
+name      MNT VA2000
+node      /dev/va2000
+module    va2000
+server    /opt/amix/X11R6/bin/Xrtg
+modes     1024x768 640x480 800x600 1280x720 1280x1024 1920x1080
+depths    16
+args      -card va2000 -mode %m -kb
+monsw     no
+```
+
+The first mode is the default. Other keys: `probe` (a command, by full path, for a card whose node
+alone cannot tell, such as the Z3660's `zz9k_probe z3660`), `limits` (raise `vmem` and `data` for a
+server that maps the whole board), `monswtool` and `restore` (the Z3660 hands the keyboard back with
+`rtg-kbdback`), `env`, `once`, and `%m %w %h %d %n %p` in `args`. A probe must return at once, change
+nothing, be safe as any user with no board fitted and inside the installer's `chroot`, and read the
+board's identity from the driver rather than from a node opening. A probe line needs amix-base 1.0-35
+or later; earlier bases, as on the 1.1 and 1.1.1 install media, stop at it.
+
+## The kernel side
+
+The VA2000's module is demand class: it loads at the first open of `/dev/va2000` (character major
+68) and stays only when it finds a board ✅ (`kernel/drivers/va2000/README.md`). A new card's driver
+needs a major from the [registry](../../reference/major-number-registry.md), an ioctl that gives the
+board's identity so probes can tell boards apart, and, on the 68040/68060 line, its framebuffer
+registered with `DDI_FB_REGISTER` so the user mapping gets the fast non-cacheable class ✅
+([loadable modules](../loadable-modules.md), amix `kernel/dlm/docs/abi/writing-a-module.md`).
+
+## Testing
+
+A graphics card cannot be tested in Amiberry: the VA2000 cannot be emulated, and the emulator has
+no ZZ9000 or Z3660 RTG either 🟡 (no such device in the [Amiberry page](../../getting-started/emulation-amiberry.md)).
+So the card driver is tested on the host against a software model, then on the card:
+
+- **Host model.** The VA2000 fork's `make -C tests/va2000 check` builds the card files for the host,
+  twice (with and without the counters), and runs them against a model of `/dev/va2000` and of the
+  card. The model covers open, close, the ioctls, `mmap` over a Zorro II, Zorro III or unknown
+  aperture, the register page and a blitter that can be made to stick, do nothing or misread. It
+  checks results against a plain CPU fill and copy, checks that probe and `initHW` refuse a node of
+  another driver before mapping or writing, and checks the caps flags after a passing self-test, a
+  failing one and a blitter lost later. Give a new card's driver the same kind of model first: it is
+  where an LLM tool can iterate fast and safely.
+- **Emulation.** The packages' install and a boot with the module present and no board.
+- **The card.** Under [the rules for real hardware](real-hardware.md). The VA2000 status to copy as
+  a model of a status line: on an Amiga 3000 with a 68060 (kernel k46 -67, va2000-k46 1.1.0-2, x11r63
+  6.3-11) the module loads at the first open and stays, the card's test tools work (7 of the 9
+  modes; the monitor refused two), and `Xrtg`, started by `xstart card=va2000`, drives the card at
+  1024x768 and 1280x720 with mouse and keyboard. Not yet run on a real card: the 68030 package, XDM,
+  unloading and reloading the module, a boot with the module in the boot set, and long runs ✅.
+
+## Steps for a new card
+
+The plan to give the tool:
+
+1. Read this page, `rtg.h` (patch 29), the VA2000 card directory and its README, and `display.d(4)`.
+2. Check the kernel driver gives what the backend needs: a node, `mmap`, an identity ioctl, the
+   blitter's interface if the kernel owns it.
+3. Write the card directory: `<card>.h`, `<card>hw.c` (record, probe, modes, `initHW`, `closeHW`,
+   monitor switch), `<card>blit.c` if there is a blitter (bounded waits, a self-test), `Imakefile`.
+4. Write the host model and its tests, and make them pass.
+5. Wire it in: `FORKDIRS` and a pin, a patch for `SUBDIRS`, `RTGCARDS` and the server libraries,
+   `make recipes/x11r6.3`.
+6. Write the card file and add it to the kernel driver's package.
+7. Test the install in emulation, then the card; report what ran and what did not.
+
+## See also
+
+- [Writing an Amix driver with an LLM tool](driver-guide.md)
+- [X11 RTG graphics drivers](../x11-rtg-drivers.md) and [X11 & the desktop](../../how-it-works/x11-and-desktop.md)
+- Case studies: [va2000](../case-studies/va2000.md), [xrtg](../case-studies/xrtg.md),
+  [zz9000](../case-studies/zz9000.md), [x11r6.3 (Xzz9000)](../case-studies/x11r63-zz9000.md)
+
+## Sources
+
+- amix `userland/packages/x11r6.3`: `README.md`, `package.sh` (`PKGREV` 12, `FORKDIRS`),
+  `patches/29-rtg-card-ops.patch` (the record and its contract), `patches/30-rtg-card-neutral.patch`
+  (the layer, `rtgcards.c`, card choice), `patches/32-rtg-va2000.patch`, `patches/33-rtg-dev.patch`,
+  `xrtg-amix.pin` (`552968e`), `man/Xrtg.1`; `kernel/drivers/va2000/README.md` and
+  `pkg/va2000.display`; `kernel/drivers/z3660rtg/README.md` and `pkg/z3660.display`;
+  `userland/base/display/display.d.4`; `build/pkg/README.md` (`FORKDIRS`); at amix `397b868f`, read
+  2026-11-20 ✅.
+- amigaux/xrtg-amix at `552968e`: `x11r6.3/hw/amix/rtg/va2000/README.md` and `Imakefile` ✅.
+- No ZZ9000, Z3660 RTG or VA2000 device in Amiberry: absence from this site's Amiberry page, not a
+  check of the emulator's source 🟡.
+
+
+================================================================================
+# FILE: docs/drivers/llm/real-hardware.md
+================================================================================
+
+---
+title: Real Hardware with an LLM Tool
+summary: When a device cannot be emulated — what to let an LLM coding tool do on a real Amiga running Amix and how to keep it safe: a dedicated machine with scratch disks, remote access (serial console, telnet/ftp, a smart plug, KVM capture), a devices file that describes the machine, the rules the tool follows, a hands-on flag, and what stays the human's.
+status: draft
+---
+
+# Real hardware with an LLM tool
+
+Some devices cannot be emulated: a graphics card, a network or SCSI board without an emulator model,
+an accelerator's own hardware. Then the driver's last tests run on a real Amiga, and an LLM tool
+that can power-cycle, type and write disks on that machine needs rules. This page generalises one
+working practice. The rules come from experience with Amix on real machines; the ones that rest on a
+measured fact link to it, and the rest are marked as practice 🟡.
+
+## The machine
+
+- **A dedicated development machine, with nothing valuable on it.** Everything it holds can be
+  rebuilt from git and the release media in minutes. Then a wrong write costs a reinstall, not data,
+  and you can give the tool full access to it without asking each time 🟡 (practice).
+- **Scratch disks and images only.** The tool writes only to targets you have named as scratch: a
+  spare disk, an SD card in a SCSI emulator, an image file. Keep the disks you care about out of the
+  machine, or out of the tool's list.
+- **Rebuildable state.** Keep the install images, kernels and configuration the machine boots from
+  in version control or on the release media, so "start again from known" is one step.
+
+## Remote access
+
+The tool works through the same channels you would use from another room:
+
+| Channel | Use | Know this |
+|---|---|---|
+| Serial console | boot messages, kernel panics, firmware menus, a login when the network is down | Let one program own it: two programs reading a USB-serial adapter take each other's bytes 🟡 (practice) |
+| telnet and ftp over the network | commands and file transfer once Amix is up | A command line over the tty's 256-byte limit runs nothing and wedges the login, so keep lines under about 250 characters ✅ ([quirk 99](../../how-it-works/quirks.md#99-canonical-line-wedge)); a successful remote halt looks like a dropped connection ✅ ([quirk 47](../../how-it-works/quirks.md#47-halt-looks-like-failure)) |
+| A smart plug | power off and on | The only reset that is always clean (below) |
+| KVM capture | the screen and keyboard, for what the serial line does not show (an X display, a graphical boot menu) | The Amiga's own keyboard is a second live input into an accelerator's firmware menu, where one key can start a destructive operation ✅ ([real hardware](../../getting-started/real-hardware.md)) |
+
+The scripted helpers in [`tools/host-net/`](https://github.com/amigaux/grimoire/tree/master/tools/host-net/)
+(`amixsh.py`, `amixput.py`) work the same against a real machine as against an emulator ✅.
+
+## Describe the machine to the tool
+
+Give the tool one file that says what the machine is and how to reach it, so it never guesses a
+board, a slot or a power socket. A devices file in your repository, for example (every value here is
+a placeholder):
+
+```yaml
+machines:
+  devbox:
+    model: Amiga 4000            # the machine
+    cpu: 68060 on an accelerator # and the CPU mode it boots in
+    kernel_line: k46             # k30 for a 68030
+    boards:
+      - { slot: "Zorro III #1", board: "the card under test", node: /dev/<card> }
+      - { slot: "Zorro II #2",  board: "network card", note: "the telnet path" }
+    disks:
+      - { id: 6, what: "boot disk", writable: false }
+      - { id: 5, what: "scratch disk", writable: true }
+    consoles:
+      serial: { device: <host serial device>, speed: 9600 }
+      network: { address: <machine address>, login: root }
+      kvm: { unit: <capture unit>, input: 1 }
+    power:
+      plug: <smart plug name>    # off/on only
+    hands_on: false              # set true while a person works at the machine
+```
+
+Tell the tool to read it at the start of every session and to name the machine in every command
+that touches hardware.
+
+## The rules the tool follows
+
+Put these in the repository's [`AGENTS.md`](agents-template.md) so they bind every
+session:
+
+- **Clean shutdown before power-off.** While Amix is up, halt it over telnet or the console first
+  (`sync; sync; /sbin/uadmin 2 0`) 🟡 (practice). The halt is proven clean only by the next boot's
+  `fsck` repairing nothing ✅ ([quirk 47](../../how-it-works/quirks.md#47-halt-looks-like-failure)). A
+  run-level change requested over telnet while the console sits at `login:` stalls in the stock
+  `init`, so keep a root shell logged in on the console, or halt rather than reboot ✅
+  ([quirk 58](../../how-it-works/quirks.md#58-console-getty-shutdown-stall)).
+- **A 10 s quiet after the halt** before the power goes off 🟡 (practice).
+- **Every power action logged**, with a time stamp and the reason, in a file the human can read.
+- **Write only to scratch targets**, the ones the devices file marks writable.
+- **Read back what was written** when it is small or the link is fast: a disk image's hash, a
+  configuration file's bytes.
+- **Firmware writes are CRC-checked, with a rollback ready**: the old image saved, the way back
+  tested, and a failsafe boot path known before the write 🟡 (practice).
+- **Never warm-reset a real 68060 and carry on.** A warm reset is not a clean-state reset: on one
+  accelerator the firmware's warm reset gave a valid reset vector 0 times in 3, where a power cycle
+  gave it 5 times in 5 🟡 ([quirk 49](../../how-it-works/quirks.md#49-power-cycle-law), one unit).
+  Plan on a power cycle, with 15–20 s off, whenever the next run must start from a known state.
+- **Send a command and its confirmation in one write** to a firmware prompt, so a keystroke from the
+  machine's keyboard cannot answer it first ✅ ([real hardware](../../getting-started/real-hardware.md)).
+- **Stop and report** on anything the tool cannot explain from what it sees, rather than retrying
+  power actions.
+
+## The hands-on flag
+
+When a person works at the machine (changing a card, reseating a cable, reading the screen), they
+set a flag that stops the tool's power and reset actions. It does not need to stop reading the
+serial line or the screen. Keep it simple and checkable: a line in the devices file (`hands_on:
+true`), a file the power script tests, or a lock in whatever tool runs the plug. The power script
+checks the flag before every action and refuses while it is set; the tool reports the refusal and
+waits, and never works around it 🟡 (practice).
+
+## What stays the human's
+
+- Plugging and unplugging cables, inserting and removing cards and disks, setting jumpers.
+- Anything the tool cannot see: a smell, a noise, a light on a board, a monitor that shows nothing
+  the capture can see.
+- Clearing the hands-on flag.
+- Deciding when a result is good enough to publish.
+
+## See also
+
+- [Writing an Amix driver with an LLM tool](driver-guide.md)
+- [An AGENTS.md for a driver repository](agents-template.md)
+- [Running Amix on real hardware](../../getting-started/real-hardware.md)
+- [Quirks 47](../../how-it-works/quirks.md#47-halt-looks-like-failure),
+  [49](../../how-it-works/quirks.md#49-power-cycle-law) and
+  [58](../../how-it-works/quirks.md#58-console-getty-shutdown-stall): halts, resets and remote
+  run-level changes
+
+## Sources
+
+- This site's quirks 47, 49, 58 and 99 and the real-hardware page, with their own sources ✅/🟡 as
+  tagged there.
+- The rules marked 🟡 (practice) are one project's working practice on its development machines,
+  not measured platform facts.
+
+
+================================================================================
+# FILE: docs/drivers/llm/agents-template.md
+================================================================================
+
+---
+title: An AGENTS.md for a Driver Repository
+summary: A ready-to-copy AGENTS.md for an Amix driver repository, so an LLM coding tool follows the same rules every session — read this site first and trust its tags, build only in amix's container, write for the stock SVR4 shell and grep, keep box command lines short, brief commits, hardware safety, and how to report — with the reason behind each rule.
+status: draft
+---
+
+# An AGENTS.md for a driver repository
+
+LLM coding tools read a file in the repository's root at the start of a session: `AGENTS.md` for
+Codex and most others, `CLAUDE.md` for Claude Code (which can simply contain a line pointing at
+`AGENTS.md`). Copy the template below into your driver repository, fill in the bracketed parts, and
+the rules of the [LLM driver guide](driver-guide.md) bind every session without your repeating them.
+The reasons and sources for each rule are [below the template](#why-each-rule).
+
+## The template
+
+````markdown
+# AGENTS.md — rules for AI coding tools in this repository
+
+This repository is [driver name]: a driver for [the device] on Amiga UNIX (Amix), the SVR4.0
+system for 68030 and 68040/68060 Amigas. [One line: kernel module, STREAMS driver, X backend,
+user-space tool.] Follow these rules exactly.
+
+## 1. Read before you write
+
+- Platform facts come from the Amix grimoire, https://grimoire.amigaux.org: start at its
+  llms.txt, search llms-full.txt, and find each fact's source in sources/research-brief.md.
+- Trust its confidence tags: ✅ verified, 🟡 reported but not checked first-hand, 🔴 unverified.
+  Rely on ✅. Say so when you rely on 🟡. Never raise a tag yourself.
+- For modules: amix kernel/dlm/docs (spec/, abi/writing-a-module.md, abi/ddi.md, contracts/)
+  and the examples in amix kernel/modules. For X backends: the grimoire's worked example and the
+  x11r6.3 package in amix userland/packages/x11r6.3.
+- Do not carry over facts from Linux, the BSDs or later SVR4 releases. If the grimoire and the
+  amix docs do not say it, it is a question to test, not an assumption.
+- Name the page or file behind each platform fact in your commit or report.
+
+## 2. Build only in amix's container
+
+- Build with amix's build container (`make tools`, then `make kit`, `make modules`,
+  `make drivers/<name>` or `make recipes/<name>`). Never install or build a cross compiler of
+  your own, and never build with whatever compiler the host has.
+- Kernel space (modules, drivers) is gcc-cross-amix, GCC 2.7.2.3; userland is gcc14-cross-amix,
+  GCC 14. Both are in the container at their pins.
+- A module must pass the kit's checker (modcheck.py); read what it says before you change code.
+- Run the host tests before every commit: [this repository's test command].
+
+## 3. Write for the stock system on the box
+
+Scripts that run on Amix (install scripts, tests, rc files) run under the stock 1990 /bin/sh and
+the stock tools:
+
+- no `$(...)`: use backticks;
+- no `grep -q`, `grep -e`, `grep -E` or `\|` in a pattern: redirect grep to /dev/null and test
+  `$?`, and use egrep or two greps for alternatives;
+- `false` exits 255, `mkdir -p` fails on an existing directory, a `while read` loop fed by `<`
+  runs in a subshell, and an EXIT trap replaces the exit status: see the grimoire's quirk 12.
+
+## 4. Commands sent to the box
+
+- Keep every command line sent over telnet under about 250 characters. A line over the tty's
+  256-byte limit runs nothing and wedges the login (grimoire quirk 99). Split long work into
+  several lines or a script copied over by ftp.
+- Never end a command sent through a transport with a bare `&`; use nohup and poll a log
+  (grimoire quirk 39).
+- A remote halt that drops the connection has usually worked. Check with the next boot, never
+  by running it again.
+
+## 5. Commits
+
+- Brief messages: a subject of at most 72 characters in the imperative, saying what changed;
+  a body only for what the diff cannot show (why, measured numbers, hashes).
+- Describe the change, never the conversation that produced it.
+- [Your attribution policy for AI tools.]
+
+## 6. Hardware safety
+
+The device under test cannot be emulated, so the last tests run on a real Amiga. Follow the
+grimoire's page "Real hardware with an LLM tool" (drivers/llm/real-hardware). In short:
+
+- Read [path to the devices file] first. Name the machine in every hardware command.
+- Write only to the targets it marks writable. Read back what you wrote.
+- Clean shutdown before power-off, then 10 s quiet. Log every power action with a time stamp.
+- Firmware writes: CRC-checked, the old image saved, a tested way back.
+- A warm reset is not a clean start: power-cycle, 15–20 s off, when a run must start from a
+  known state. Never warm-reset a real 68060 and carry on.
+- If the hands-on flag is set, make no power or reset action. Report and wait.
+- Cables, cards, disks and anything you cannot see are the human's. Ask.
+
+## 7. Reporting results
+
+Each result says: what ran (commits, package versions), where (emulator and version, or the
+machine: model, CPU, kernel line, slot), the exact commands and the output that matters, the
+result tagged ✅ reproduced / 🟡 seen once / 🔴 unexplained, and what was not run. Keep "passes
+in emulation" and "runs on the device" apart. Bugs in amix go to github.com/amigaux/amix/issues,
+new platform facts to github.com/amigaux/grimoire.
+````
+
+## Why each rule
+
+| Rule | Why | Source |
+|---|---|---|
+| Read the grimoire first, trust its tags | Much of the Amix lore is wrong, and a tool falls back on Linux habits without grounded documents | this site's [`AGENTS.md`](https://github.com/amigaux/grimoire/blob/master/AGENTS.md) |
+| Build only in the container | The cross compilers are pinned and built inside it; the fixed `/src` path keeps the period compiler from building your checkout's location into the bytes, so a result can be rebuilt exactly ✅ | amix `docs/BUILDING.md` |
+| No `$(...)`, no `grep -q` | The stock `/bin/sh` predates POSIX, and its grep has no `-q` ✅ | [quirk 12](../../how-it-works/quirks.md#12-binsh-is-pre-posix) |
+| No `grep -E` | The stock SVR4 grep's `-E` is shaky ✅ (amix's grep package README); prefer `egrep` | amix `userland/packages/grep/README.md` |
+| No `grep -e`, no `\|` | `\|` is a GNU extension of basic regular expressions, and the stock grep is not GNU; `-e` is kept out for the same caution 🟡 (not measured here) | — |
+| `false`, `mkdir -p`, `while read`, EXIT trap | Measured on the stock shell ✅ | [quirk 12](../../how-it-works/quirks.md#12-binsh-is-pre-posix) |
+| Lines under about 250 characters | `MAX_CANON` is 256; a 237-byte line answered, 260- and 269-byte lines ran nothing and wedged the login ✅ | [quirk 99](../../how-it-works/quirks.md#99-canonical-line-wedge) |
+| No bare trailing `&` | A bare trailing `&` sent to the box's transport silently never runs ✅ | [quirk 39](../../how-it-works/quirks.md#39-transport-ampersand-law) |
+| A dropped connection after a halt | `uadmin 2 0` kills the session that sent it; the next boot's `fsck` is the proof ✅ | [quirk 47](../../how-it-works/quirks.md#47-halt-looks-like-failure) |
+| Brief commits | amix's own rule for commit messages ✅ | amix `CONTRIBUTING.md` |
+| Hardware safety | A wrong power action or write on a real machine costs hours; a warm reset is not a clean start 🟡 | [real hardware](real-hardware.md), [quirk 49](../../how-it-works/quirks.md#49-power-cycle-law) |
+| Reporting | Another person, or the next session, must be able to rebuild and rerun what you claim | [the guide](driver-guide.md#6-how-to-report) |
+
+## See also
+
+- [Writing an Amix driver with an LLM tool](driver-guide.md)
+- [Worked example: an X backend](x-backend-example.md)
+- [Real hardware with an LLM tool](real-hardware.md)
+- [Writing for LLM consumers](../../contributing/writing-for-llms.md)
+
+## Sources
+
+- This site's `AGENTS.md` and quirks 12, 39, 47, 49 and 99, with their own sources ✅/🟡 as tagged
+  there.
+- amix `docs/BUILDING.md`, `CONTRIBUTING.md` and `userland/packages/grep/README.md`, at amix
+  `397b868f`, read 2026-11-20 ✅.
+- The `grep -e` and `\|` rule is a precaution, not a measurement on the box 🟡.
 
 
 ================================================================================

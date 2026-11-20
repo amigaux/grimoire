@@ -94,6 +94,10 @@ nav:
       - Zorro II AUTOCONFIG: drivers/zorro-autoconfig.md
       - X11 RTG drivers: drivers/x11-rtg-drivers.md
       - Toolchain & packaging: drivers/toolchain.md
+      - "With an LLM tool: the guide": drivers/llm/driver-guide.md
+      - "With an LLM tool: an X backend": drivers/llm/x-backend-example.md
+      - "With an LLM tool: real hardware": drivers/llm/real-hardware.md
+      - "With an LLM tool: AGENTS.md template": drivers/llm/agents-template.md
       - "Case study: va2000": drivers/case-studies/va2000.md
       - "Case study: xrtg": drivers/case-studies/xrtg.md
       - "Case study: lszorro": drivers/case-studies/lszorro.md

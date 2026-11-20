@@ -234,6 +234,7 @@ the Z3660 identity and windows behind one switch, `-DZZ9K_TARGET_Z3660`; with th
 - [`x11r6.3-amix` case study](case-studies/x11r63-zz9000.md) — the X11R6.3 `Xzz9000` server (second generation).
 - [`zz9000-amix` case study](case-studies/zz9000.md) — the ZZ9000 kernel framebuffer driver (char 49).
 - [`mesa-amix` case study](case-studies/mesa31.md) — Mesa 3.1 software GL on the R6.3 stack.
+- [Worked example: an X backend](llm/x-backend-example.md) — a new card under the X11R6.3 server's card-neutral RTG layer (x11r63 6.3-10 on), written with an LLM tool.
 - [X11 & the Desktop](../how-it-works/x11-and-desktop.md) — historical X11R4/R5, OpenLook, A2410 TIGA, quirks.
 - [The Amix driver model](driver-model.md) — `cdevsw[]`, char vs block, statically-linked drivers.
 - [Writing a char driver](writing-a-char-driver.md) — the char-driver pattern the va2000 framebuffer follows.

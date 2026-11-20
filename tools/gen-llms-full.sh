@@ -47,6 +47,10 @@ order=(
   docs/drivers/zorro-autoconfig.md
   docs/drivers/x11-rtg-drivers.md
   docs/drivers/toolchain.md
+  docs/drivers/llm/driver-guide.md
+  docs/drivers/llm/x-backend-example.md
+  docs/drivers/llm/real-hardware.md
+  docs/drivers/llm/agents-template.md
   docs/drivers/case-studies/va2000.md
   docs/drivers/case-studies/xrtg.md
   docs/drivers/case-studies/lszorro.md

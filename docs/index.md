@@ -89,6 +89,10 @@ is plain Markdown with stable headings, exact commands, and inline source-confid
 [Zorro AUTOCONFIG](drivers/zorro-autoconfig.md) ·
 [X11 RTG drivers](drivers/x11-rtg-drivers.md) ·
 [Toolchain](drivers/toolchain.md) ·
+With an LLM tool: [the guide](drivers/llm/driver-guide.md) ·
+[an X backend](drivers/llm/x-backend-example.md) ·
+[real hardware](drivers/llm/real-hardware.md) ·
+[AGENTS.md template](drivers/llm/agents-template.md) ·
 Case studies: [va2000](drivers/case-studies/va2000.md) ·
 [xrtg](drivers/case-studies/xrtg.md) ·
 [lszorro](drivers/case-studies/lszorro.md) ·

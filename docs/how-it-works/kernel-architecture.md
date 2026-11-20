@@ -30,11 +30,12 @@ Two loadable-module efforts exist outside the stock system:
 - The **ashnazag** project (kdedon; one SVR4 kernel for 68k Mac, Atari and Amiga) built a
   loadable-module core (DLM) into its own kernels 🟡. Its earlier commits are GPL-2.0; from
   2026-10-14 the DLM core is MIT-licensed ✅ (`amigaux/amix` `kernel/dlm/core/upstream.pin`).
-- The **amigaux 1.1** release is building loadable modules for Amix itself, on both CPU lines, with
-  its own boot loader and a patch queue on that MIT core. It runs in emulation and on real 68060
-  hardware but is not released (2026-10-29) ✅. See [loadable kernel modules](../drivers/loadable-modules.md).
+- The **amigaux 1.1** release (2026-11-07) ships loadable modules for Amix itself, on both CPU
+  lines, loaded at boot or on demand, with its own boot loader and a patch queue on that MIT core;
+  1.1.1 and 1.1.2 continue it ✅. See [loadable kernel modules](../drivers/loadable-modules.md).
 
-Until 1.1 ships, the static model on this page and on the driver pages is the one that applies.
+The static model on this page applies to stock Amix and to amigaux 1.0. On amigaux 1.1 and later,
+drivers and filesystems are loadable modules ([loadable kernel modules](../drivers/loadable-modules.md)).
 
 ## The kernel as object libraries in /usr/sys
 
@@ -180,7 +181,7 @@ sources ship in the relink kit, in `usr/sys/amiga/driver/kdb` ✅.
 - The 040/060 scope of the CPU, FPU and page-size facts: [`asokero/amix-040-060-port`](https://github.com/asokero/amix-040-060-port) `include-modelb/sys/immu.h` (`NBPP` 4096, `PNUMSHFT` 12) ✅; the [040/060 status page](68040-68060-status.md) (the port, the 68LC060 software-FPU lane) ✅; the [amigaux.org downloads](https://amigaux.org/downloads/) page (the 1.0 68060 media for an A3000, A4000 or A4000T with a Z3660) ✅.
 - The kmem-allocator map (buddy pools / `sptalloc` whole-page scatter; `vtop()` valid for one page; freelist links in a freed chunk's first 8 bytes) — full disassembly of `kmem_alloc`/`kmem_free`/`kmem_allocbpool`/`sptalloc`/`segkmem_alloc`/`page_get` in the shipped kernel, and the DMA-scatter corruption reproduced on a real A4000 + Z3660, from the **amix-cdfs** port @ `31e8c3b` (`NBPP = 2048` per `sys/immu.h`). ✅ See [the driver model DMA-alignment contract](../drivers/driver-model.md#the-dma-alignment-contract-a-vtopd-buffer-must-not-cross-a-page-boundary).
 - The **empty-allocator behaviour** (first-party record, 2026-11-01) ✅ (🟡/🔴 where tagged): the amix `kernel/dlm` low-memory runs, [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/tests/bench/lowmem/` (`kmsleep`) and `kernel/dlm/tests/bench/README.md` ("Low memory at first use", `53624e5`, on `master`).
-- The loadable-module facts (2026-10-29): [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/README.md`, `kernel/dlm/core/upstream.pin` (kdedon's DLM core, MIT from upstream `b736c59`, 2026-10-14; earlier commits GPL-2.0) ✅; the ashnazag project itself, <https://github.com/kdedon/ashnazag> 🟡 (not reproduced here).
+- The loadable-module facts (2026-10-29; the 1.1 release, read 2026-11-20: amix `docs/WHATS-NEW.md` "1.1", the release tag `1.1` of 2026-11-07): [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/README.md`, `kernel/dlm/core/upstream.pin` (kdedon's DLM core, MIT from upstream `b736c59`, 2026-10-14; earlier commits GPL-2.0) ✅; the ashnazag project itself, <https://github.com/kdedon/ashnazag> 🟡 (not reproduced here).
 - **Commodore's remote kernel debugger** (read 2026-11-12) ✅: amix-system `usr/sys/amiga/driver/kdb/`
   (`kdb.c`, `kdebug.c`, `kdebug.h`, `hooks.c`, `en.c`, `rkd.c`, `rkdb.c`, `Makefile`), `usr/sys/master.d/kernel.c`
   (the `KERNEL_DEBUGGER` blocks), `usr/sys/amiga/driver/Makefile` and `aen/Makefile`; the four hook symbols and

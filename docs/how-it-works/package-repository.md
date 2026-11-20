@@ -26,7 +26,10 @@ building packages in the first place, see [toolchain and packaging](../drivers/t
 
 ## The public repository: `pkg.amigaux.org` ✅
 
-**`http://pkg.amigaux.org/` is the canonical Amix package repository**, live since **2026-09-14** ✅.
+**`pkg.amigaux.org` is the canonical Amix package host**, live since **2026-09-14** ✅. It carries
+one tree per release: **`http://pkg.amigaux.org/1.1`** is the repository of amigaux 1.1, 1.1.1 and
+1.1.2 ✅. The 1.0 tree is still served at the root (read 2026-11-20); the publish tools carry a
+one-time move of it to `/1.0/`, with 301 redirects from the old root paths for 1.0 clients ✅.
 
 - **Plain HTTP on port 80, no redirect — permanently.** `apkg` speaks HTTP/1.0 over the 1992 SVR4
   sockets with no TLS (see [HTTP specifics](#http-specifics)), so the repo URL is `http://` for good;
@@ -36,14 +39,19 @@ building packages in the first place, see [toolchain and packaging](../drivers/t
   resolves the name through one `/etc/inet/hosts` line mapping `pkg.amigaux.org` to the host's
   address, and `apkg` still sends the *name* in `Host:` ✅.
 - **The client's compiled-in default** (no `repo=` in `/etc/apkg.conf`) is
-  `http://pkg.amigaux.org` in the client source since 2026-09-14 ✅.
-- **Contents (2026-10-14):** **41 catalog entries — the 27 stock Amix 2.1 packages plus 14 of the
+  `http://pkg.amigaux.org/1.1` in apkg 0.3.x (0.3.13 today); the 1.0 client, apkg 0.2.x, uses the
+  root `http://pkg.amigaux.org` (its default since 2026-09-14) ✅.
+- **The 1.1 tree (read 2026-11-20):** 66 ordinary rows — 28 of Commodore's stock packages under
+  `pkgs/stock/`, `apkg` and its engine under `pkgs/base/`, the rest flat in `pkgs/` — plus 35
+  kernel-space entries (the kernels, the loader and the modules) in a `#kpkg` block ✅.
+- **Contents of the 1.0 tree (2026-10-14):** **41 catalog entries — the 27 stock Amix 2.1 packages plus 14 of the
   project's own** (the `apkg` client and its engine, `cdfs`, nine cross-built add-on packages under
   `pkgs/extra/` — eight tools and libraries plus `amix-benchmark` — and two `test` fixtures) ✅.
 
 ## Repository layout
 
-Uniformly ✅ (repo source + reproduced locally against a real staging tree).
+Every release tree has the same top: `catalog`, `catalog.md5` and `pkgs/` ✅. The 1.0 tree sorts its
+package files into subdirectories ✅ (repo source + reproduced locally against a real staging tree):
 
 ```text
 <repo>/
@@ -61,6 +69,22 @@ Uniformly ✅ (repo source + reproduced locally against a real staging tree).
     │   └── net-2.1.pkg
     └── test/                  fixtures for end-to-end client tests
         └── DEMOLIB-1.0.pkg
+```
+
+The 1.1 tree, written by `assemble-release.py`, keeps `base/` for `apkg` and its engine and `stock/`
+for Commodore's packages, and lays every other package file, userland and kernel space, flat in
+`pkgs/` ✅:
+
+```text
+<repo>/1.1/
+├── catalog
+├── catalog.md5
+└── pkgs/
+    ├── base/                  APKG-0.3.13.pkg, APKGENG-1.12.10.pkg
+    ├── stock/                 repackaged Amix 2.1 distribution packages
+    ├── acompat-0.1-9.pkg      userland packages, flat
+    ├── …
+    └── a409130-1.0.0-10.pkg   kernel-space files (a #kpkg entry's file=), flat
 ```
 
 Two rules make this work:
@@ -103,6 +127,12 @@ name|version|pkginst|filename|md5|size|deps|category|description[|offset]
 | 8 | `category` | Free text (`system`, `application`, `test`, …) | Informational |
 | 9 | `description` | Free text; the only field where spaces are idiomatic | Searched by the client |
 | 10 | `offset` | **Optional.** Decimal byte offset into a raw slice | Only the raw-medium source uses it; a 9-field line leaves it unset and the raw source fails closed on that entry |
+
+Since 1.1 a catalog can also carry blocks between `#ext <name> <version>` and `#end <name>`. Every
+line in them starts with `#`, so a client that does not know a block reads it as comments ✅:
+`kpkg` (the kernel-space entries — kernels, the loader, modules — each with `size=` and `sha256=`),
+`fstype` and `isize` (per-package lines: the filesystem types a package may be installed onto, its installed size), and
+`older` (superseded published rows, kept for the record) ✅.
 
 Real rows (from the reference staging tree) ✅:
 
@@ -157,18 +187,19 @@ install scripts ✅. The catalog's `deps` field is therefore **authored**, in a 
 
 ## Integrity model
 
-**Today: md5 plus size, everywhere, checked before anything is mutated.** ✅
+**Today: md5 plus size for the ordinary rows, sha256 plus size for the kernel-space `#kpkg`
+entries, checked before anything is mutated.** ✅
 
 | Artifact | Check |
 |---|---|
 | `catalog` | `catalog.md5` sits beside it; the publisher refuses to publish a catalog that does not match its own checksum file, and re-fetches the served copy afterwards to compare |
-| each package | the catalog's `md5` **and** `size`, verified after staging and before `pkgadd` sees the file |
+| each package | the catalog's `md5` (a `#kpkg` entry: `sha256`) **and** `size`, verified after staging and before `pkgadd` sees the file |
 | a dependency chain | **every** member is staged and verified before the **first** `pkgadd` runs — a bad source cannot leave a half-installed chain |
 
 The md5 covers the file **as transported**: for a `.pkg.Z` the digest is of the compressed file ✅.
 
-**Planned, not yet implemented** 🟡: a `sha256` field alongside `md5`, plus a detached signature over
-the catalog (minisign/signify family). The reason it is on the roadmap rather than "nice to have" is
+**Planned, not yet implemented** 🟡: sha256 on every ordinary row, plus a detached signature over
+the catalog (minisign/signify family; the `#kpkg` block reserves a `#ksig` line, absent in 1.1). The reason it is on the roadmap rather than "nice to have" is
 sequencing — retrofitting signatures *after* third-party clients exist never happens. (The scheme
 was meant to land before the repository went public; the repository has been public since
 2026-09-14 and the signature has not landed yet.) On the client side sha256 verification is a small
@@ -284,7 +315,10 @@ The rule: generate the catalog with the superseded `APKG` files moved **out** of
 back, and leave a `DO-NOT-REGENERATE.txt` in the root saying so. Verify a staged catalog by
 comparing it to the expected md5 — never by re-running the generator there. `publish.sh` itself is
 safe: it only checks `catalog.md5` and runs the scans, it builds no catalog. (A durable fix —
-prefer the highest version, or an explicit pin — is a candidate, not implemented 🟡.)
+prefer the highest version, or an explicit pin — is a candidate, not implemented 🟡.) Since 1.1 a
+release tree's catalog is written by `assemble-release.py`, which keeps the newest version of each
+name live and the older published ones in an `#ext older` block, their files kept; the trap applies
+to running `gen-catalog.py` by hand ✅.
 
 ### Gate 2: the licence gates (mechanical, fail-closed, no `--force`) ✅
 
@@ -315,12 +349,13 @@ public repository may not ship, and what stock Amix object code does it embed?* 
   it reports **UNKNOWN**, never clean (`--strict` turns that into a refusal), until binaries ship
   unstripped or attest their link line. The ROM test reads file contents and is unaffected.
 
-**The kernel-package gate** (`gen-catalog.py --scan-private`) answers *is this one of our own kernel
-packages?* It refuses, unconditionally, to push **kernel packages** ✅. Those packages carry
-a whole `/stand/unix` plus the second-stage boot loader — our own kernel mints — and the gate's
-contract is that those never reach the public catalog. It predates, and is independent of, the
-2026-09-23 licensing outcome: publishing a kernel is a separate, deliberate decision, not something a
-publish run may do by accident.
+**The kernel-package gate** (`gen-catalog.py --scan-private`) answers *is this one of the 1.0-era
+kernel packages?* It refuses, unconditionally, to push a package whose `pkginfo` carries the
+`KSUM_R` or `BOOT2_SHA` markers ✅: those packages carry a whole `/stand/unix` plus the flags-based
+second-stage boot loader, and the gate's contract is that they never reach the public catalog.
+Publishing a kernel is a separate, deliberate decision, not something a publish run may do by
+accident. The 1.1 kernels, loader and modules carry no such markers: `make dist` builds them, and
+the 1.1 catalog publishes them in its `#kpkg` block (above) ✅.
 
 Two details make the gate trustworthy rather than decorative:
 
@@ -346,8 +381,9 @@ Two details make the gate trustworthy rather than decorative:
 
 ## Sources
 
-- The **amix-packagemanager** repository (the reference implementation of everything on this page)
-  ✅: `docs/design.md` §2 (client verbs, config keys, catalog format v1, HTTP client, version
+- [`amigaux/amix`](https://github.com/amigaux/amix) **`userland/pkgtools`** (formerly the
+  amix-packagemanager repository; the reference implementation of everything on this page; paths
+  below are relative to it) ✅: `docs/design.md` §2 (client verbs, config keys, catalog format v1, HTTP client, version
   compare), §2a (the three package sources and the self-describing raw layout) and §5 (repo tools);
   `src/apkg/README.md` (HTTP/1.0 details, catalog validation whitelist, flat-cache basename
   requirement, `fork`/`execv` install path, `-R` semantics); `tools/repo/gen-catalog.py` (catalog
@@ -361,8 +397,16 @@ Two details make the gate trustworthy rather than decorative:
   since `dccd3b1` and `e656915`, 2026-10-30, embedded stock libm recorded rather than refused and
   Kickstart ROM images refused, with the 105-image detection count);
   `docs/design.md` §5.3 (the authored `deps`/`cats`/`descs`/`names` files); `src/apkg/conf.c`
-  (`DEF_REPO` = `http://pkg.amigaux.org`).
-- The amix-packagemanager **`NOTES.md`** — the format and publish authority ✅: the `pkg.amigaux.org`
+  (`DEF_REPO` = `http://pkg.amigaux.org/1.1` in apkg 0.3.13, `src/apkg/apkg.h`; read 2026-11-20).
+- The **release trees and the kernel-space block** (read 2026-11-20) ✅: `userland/pkgtools`
+  `tools/repo/move-1.0-tree.sh` (one tree per release, the 1.0 move and its redirects),
+  `tools/repo/assemble-release.py` and `tools/repo/gen-catalog.py` (the 1.1 layout, the `#ext` blocks, one live row per name and the
+  `older` block), `src/apkg/catalog.c` (the `#ext kpkg 1` grammar, `#ksig` absent in 1.1),
+  `src/apkg/source.c` (md5 for userland, sha256 for kernel space), `CHANGELOG.md` (2026-11-01, one
+  tree per release); amix `docs/WHATS-NEW.md` (1.1, 1.1.1, 1.1.2); the live catalogs
+  `http://pkg.amigaux.org/1.1/catalog` (66 rows, 35 `#kpkg` entries) and `http://pkg.amigaux.org/catalog`
+  (still the 1.0 tree, 41 rows; `/1.0/catalog` not yet served).
+- The `userland/pkgtools` **`NOTES.md`** — the format and publish authority ✅: the `pkg.amigaux.org`
   move and its client contract (plain HTTP on port 80, name-based vhost, the hosts-file path;
   2026-09-14); the payload-licence gate and why it exists (2026-09-16); the `names.conf` first use and
   the catalog-regenerate trap (2026-09-16 publish log); manual publishing (2026-09-16); the
@@ -370,8 +414,9 @@ Two details make the gate trustworthy rather than decorative:
 - The 2026-09-23 licensing outcome — [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary) ✅.
 - The **live catalog** `http://pkg.amigaux.org/catalog`, read 2026-10-14 ✅: 41 rows — `stock/` (27),
   `extra/` (9), `base/` (3: `APKG`, `APKGENG`, `cdfs`) and `test/` (2); the `pkgs/extra/` add-ons and
-  their publication dates (2026-09-15, 09-16, 09-26) per the
-  [`jusii/amix-packages`](https://github.com/jusii/amix-packages) README.
+  their publication dates (2026-09-15, 09-16, 09-26) per the amix-packages README of the time; the
+  nine `pkgs/extra/` packages are listed today in [`amigaux/amix`](https://github.com/amigaux/amix)
+  `userland/packages/README.md`.
 - A **real staging tree** inspected locally (2026-07-26): 32 catalog rows over `stock/` (27),
   `base/` (3) and `test/` (2), catalog md5 `edeba578b73fc892f3c8c5ede603aca7` ✅.
 - The stock-metadata facts the authored dependency graph rests on (no `depend` files, no install

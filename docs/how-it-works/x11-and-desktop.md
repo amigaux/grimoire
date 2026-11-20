@@ -16,10 +16,10 @@ This page covers the historical X11 environment, how to bring up color on the A2
 
 | Layer | Historical Amix | Modern RTG reproduction |
 |---|---|---|
-| X server | `X` (mono) / `olinit -- -tiga` color via A2410 TIGA 🟡 | `Xrtg` (X11R5 DDX) ✅ · `Xzz9000` (X11R6.3 DDX) ✅ |
-| Display HW | Built-in mono framebuffer; **A2410** "Lowell" TMS34010, 1024×768 color ✅ | Zorro II RTG card: MNT VA2000 (Xrtg) or MNT ZZ9000 (Xzz9000) ✅ |
+| X server | `X` (mono) / `olinit -- -tiga` color via A2410 TIGA 🟡 | `Xrtg` (X11R5 DDX) ✅ · `Xrtg` (X11R6.3, the amigaux `x11r63` package; also installed as `Xzz9000` and `X`) ✅ |
+| Display HW | Built-in mono framebuffer; **A2410** "Lowell" TMS34010, 1024×768 color ✅ | RTG card: the Z3660's RTG, MNT ZZ9000 (Zorro II or III) or MNT VA2000 (R6.3 `Xrtg`, `-card` chooses); the VA2000 also under the R5 `Xrtg` ✅ |
 | Window manager | OpenLook `olwm` + `olwsm`; `tvtwm` on mono 🟡 | any (`olwm`, `twm`, …) |
-| X release | X11R4 default 🟡; X11R5 via *Gateway! Vol.2* 🟡 | X11R5 (`Xrtg`) ✅; **X11R6.3** (`Xzz9000`, installs to `/usr/x11r6` alongside R4/R5) ✅ |
+| X release | X11R4 default 🟡; X11R5 via *Gateway! Vol.2* 🟡 | X11R5 (`Xrtg`) ✅; **X11R6.3** (`Xrtg`, the amigaux `x11r63` package, under `/opt/amix/X11R6` with `/usr/X11R6` linked to it, alongside R4/R5) ✅ |
 | Fonts | needs the **Xol** OpenLook font set 🟡 | inherited from the X11R5/R6.3 build |
 | OpenGL | — | Mesa 3.1 software rendering (Xlib driver) on the R6.3 stack, bootstrap stage ✅ |
 
@@ -135,7 +135,8 @@ olwm &
 ```
 
 - Build details (X11R5 `imake` with a custom `config/amix.cf`, `BuildPex=NO`, SVR4 lib rules to avoid `ranlib` issues) live in the [xrtg case study](../drivers/case-studies/xrtg.md) ✅.
-- Getting the VA2000 driver into the kernel (the 6 patched kernel files, `mknod /dev/va2000 c 68 0`, `make install` → `relocunix`, `make bootpart KERNEL=relocunix`, reboot) is covered in the [VA2000 case study](../drivers/case-studies/va2000.md) and [kernel build](../drivers/kernel-build.md) ✅.
+- Getting the VA2000 driver into a stock kernel (the 6 patched kernel files, `mknod /dev/va2000 c 68 0`, `make install` → `relocunix`, `make bootpart KERNEL=relocunix`, reboot) is covered in the [VA2000 case study](../drivers/case-studies/va2000.md) and [kernel build](../drivers/kernel-build.md) ✅.
+- On amigaux 1.1.2 and later there is no relink: `apkg install va2000-k30` (or `va2000-k46` on the 68040/68060) installs the driver as a module, loaded at the first open of `/dev/va2000` (it needs `kbootset` 1.1.0.261115-46 or later), with the card file `/etc/display.d/va2000`, so `xstart` runs the X11R6.3 server as `Xrtg -card va2000` (`x11r63` 6.3-10 or later; `card va2000` in `/etc/display` picks it beside another card) ✅. The packages are built from the fork [`amigaux/va2000-amix`](https://github.com/amigaux/va2000-amix) at a pin.
 - **Licensing:** the new code is MIT-licensed; the X11R5 portions retain X Consortium terms ✅. Building `Xrtg` needs an installed Amix 2.1 system with its X11R5 source tree at `/usr/x11r5` (the `xrtg-amix` README's requirement), and the repo also ships a script that packages a built `Xrtg` as a binary tar ✅.
 
 ### The newer generation: X11R6.3 on the ZZ9000 (+ Mesa)
@@ -149,16 +150,20 @@ release and a newer MNT card:
 2. **[`x11r6.3-amix`](../drivers/case-studies/x11r63-zz9000.md)** — an **X11R6.3** port whose server
    `Xzz9000` draws into that framebuffer; installs under `/usr/x11r6` and coexists with the stock
    X11R4/R5 ✅. It also documents the native Amix **shared-library ABI** (`ld -G -h` runtime images +
-   `.sa` stub archives) that dynamic Xt clients need ✅.
+   `.sa` stub archives) that dynamic Xt clients need ✅. amigaux ships X11R6.3 as its own `x11r63`
+   package (amix `userland/packages/x11r6.3`, with isoriano's DDX as patch 00): one server, `Xrtg`
+   (also installed as `Xzz9000` and `X`), static libraries rather than the `.so`/`.sa` model ✅.
 3. **[`mesa-amix`](../drivers/case-studies/mesa31.md)** — **Mesa 3.1** software OpenGL (Xlib driver)
    rendering through `Xzz9000` — no server-side GLX required; bootstrap stage (static
    `libGL`/`libGLU`/`libglut` + demos) ✅.
 
-Status 🟡 (author-reported, A3000UX + ZZ9000, not reproduced here): `Xzz9000` builds with GCC
+Upstream status 🟡 (author-reported, A3000UX + ZZ9000, not reproduced here): `Xzz9000` builds with GCC
 2.7.2.3, links, and starts a `twm`/`xterm`/`xclock` session at 1920×800; it is explicitly development
-software. Separately, the same `Xzz9000`, cross-built with `gcc-cross-amix`, brought the OpenLook
+software. amigaux has shipped its own X11R6.3 build, built with GCC 14, since 1.1 (`x11r63` 6.3-8, for
+the Z3660's RTG); 1.1.2 (`x11r63` 6.3-11) adds the ZZ9000 and the VA2000, tested for those two in
+emulation ✅. Separately, the same `Xzz9000`, cross-built with `gcc-cross-amix`, brought the OpenLook
 desktop up on a Z3660's RTG output in a real A4000 on 2026-09-19 ✅
-([`jusii/amix-z3660rtg`](https://github.com/jusii/amix-z3660rtg) `docs/DEMO-RTG.md`). The historical
+([`amigaux/amix-z3660rtg`](https://github.com/amigaux/amix-z3660rtg) `docs/DEMO-RTG.md`). The historical
 desktop notes on this page (OpenLook, Xol fonts, keymap quirks) apply to the *stock* servers — the
 R6.3 test session uses `twm` from its own tree ✅.
 
@@ -184,4 +189,5 @@ R6.3 test session uses `twm` from its own tree ✅.
 - [amigaunix.com — X11](https://www.amigaunix.com/doku.php/x11) — community-reported R4/R5, TIGA, OpenLook, and keymap quirks (🟡).
 - [`hmlio/amix-x11-aga`](https://github.com/hmlio/amix-x11-aga) — `Xaga`: README (status, colors, requirements, known issues), `docs/design.md` and `docs/findings.md`; author-reported, not reproduced here (🟡).
 - The `asokero/xrtg-amix` README — the `/usr/x11r5` source-tree requirement, the licence section, and `make-release.sh` (binary tar packaging) ✅.
-- [`jusii/amix-z3660rtg`](https://github.com/jusii/amix-z3660rtg) — README and `docs/DEMO-RTG.md`: the cross-built `Xzz9000` OpenLook desktop on a Z3660 in a real A4000, 2026-09-19 ✅.
+- [`amigaux/amix-z3660rtg`](https://github.com/amigaux/amix-z3660rtg) (the fork amix pins in `kernel/drivers/z3660rtg/z3660rtg.pin`) — README and `docs/DEMO-RTG.md`: the cross-built `Xzz9000` OpenLook desktop on a Z3660 in a real A4000, 2026-09-19 ✅.
+- The amigaux X11R6.3 and VA2000 packages (read 2026-11-20) ✅: [`amigaux/amix`](https://github.com/amigaux/amix) `userland/packages/x11r6.3/package.sh` (`PREFIX=/opt/amix/X11R6`, `/usr/X11R6`, `TOOLCHAIN=gcc14`, the server names) and `README.md` (patch 00, patches 29–33, the static libraries); `userland/packages/CHANGELOG.md` (6.3-8, 6.3-10); `kernel/drivers/va2000/README.md` and `va2000.pin`; `docs/WHATS-NEW.md` (1.1, 1.1.2) and `media/docs/releases/1.1.2.md`.

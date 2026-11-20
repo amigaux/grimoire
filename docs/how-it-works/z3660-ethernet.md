@@ -160,16 +160,18 @@ blaming the card.
 - **The kernel fix is the big lever** (×4–13): see [the 4 KB TCP queue](networking.md#tcp-lower-read-queue).
 - **The driver's back-pressure** (hold the frame in the firmware slot when IP cannot take it, and
   resume from the read service procedure) removes the driver's own loss below IP. It matters only
-  once the kernel fix is in. It is first-party work, not yet in the published `amix-z3660net`
-  ([the driver's service model](../drivers/z3660-ethernet-driver.md#receive-service-model)).
+  once the kernel fix is in. The measurements above predate its publication; it is now in the
+  published driver, [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/drivers/z3660eth`
+  (formerly amix-z3660net) ([the driver's service model](../drivers/z3660-ethernet-driver.md#receive-service-model)).
 - **The ring** removes the remaining MAC-level drops of the single descriptor.
 - **Gigabit** (`eth_adv1000 YES`) was measured only on the stock-kernel stack: push 59.7 KB/s against
   29.0 at 100 Mbit, the pull 675 KB/s. It halves a loss that lives in the kernel, so it is no
   substitute for the kernel fix.
 - **The next ceiling** is the driver's **60 Hz receive poll**. Frames and the acknowledgements they
   trigger wait up to a tick (about 11 ms on average), so the push settles at about half the pull 🟡.
-  Interrupt-driven receive in `z3660eth` is the lever. It is on the 1.1 list, behind the reason its
-  interrupt handler was unregistered.
+  Interrupt-driven receive in `z3660eth` is the lever. It did not make 1.1: the 1.1.x driver still
+  drains receive from a polled `timeout()` callout, and `z3660ethintr()` exists for a future
+  interrupt path ✅.
 
 ## Measured: AmigaOS, and the two stacks compared ✅ {#measured-amigaos}
 
@@ -260,3 +262,8 @@ Upstream's own 1.03 beta 21 image measured squarely inside the fork's 1.0 band.
   bookkeeping and are not reproduced here.
 - The AmigaOS release-firmware ranges (🟡) are from the AmigaOS bench's own notes of the same week,
   relayed rather than re-measured for this page.
+- The driver as published (read 2026-11-20) ✅: [`amigaux/amix`](https://github.com/amigaux/amix)
+  `kernel/drivers/z3660eth/src/z3660eth.c` (the receive back-pressure at `z3660eth_drain`),
+  `README.md` (receive drained from a `timeout()` poll callout by default, `z3660ethintr()` for a
+  future interrupt path) and `docs/history-map.txt` (moved in from amix-z3660net's `rx-backpressure`
+  branch).

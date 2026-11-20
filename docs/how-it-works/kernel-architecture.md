@@ -141,6 +141,25 @@ Amix exposes the usual SVR4 administration model ✅:
 
 One userland gotcha worth flagging at the kernel/system level: Amix's `/bin/sh` is **pre-POSIX** — no `$(...)` command substitution, no `grep -q` ✅. This bites kernel-rebuild scripts and is documented on [quirks](quirks.md).
 
+## Commodore's remote kernel debugger, left out of the release ✅ {#remote-kernel-debugger}
+
+Amix 2.1c was built with a remote kernel debugger over Ethernet that the released kernel leaves out; its
+sources ship in the relink kit, in `usr/sys/amiga/driver/kdb` ✅.
+
+- **How it works.** On the machine being debugged, a small stub in the kernel stops the kernel, reads and
+  writes its memory and its general and FPU registers, single-steps and reports status, each on request.
+  On a second Amix machine, the debugging host, a character device presents the debugged kernel to a
+  debugger the way `/proc` presents a process, and a STREAMS driver carries the requests. The two talk
+  over the A2065 in Ethernet packets of their own type, which the debugged machine's `aen` driver hands
+  to the stub before its normal processing ✅.
+- **The hooks are still in the released kernel, all null.** The stock 2.1c kernel defines four hook
+  pointers, `trap_hook`, `panic_hook`, `clock_hook` and `aen_packet_hook`, and calls each when it is set:
+  on every kernel-mode trap (first), before a trap panic, on every clock tick (with the interrupt frame),
+  and on every received Ethernet packet in `aen`, before the driver handles it. Nothing sets them in the
+  released kernel, so each costs a test and a branch ✅.
+- **Switching it on** is a build of `master.d/kernel.c` with `KERNEL_DEBUGGER` defined, and is described
+  on [the kernel build page](../drivers/kernel-build.md#the-remote-kernel-debugger) ✅.
+
 ## See also
 
 - [How it works — overview](overview.md) — where the kernel sits in the whole system.
@@ -162,3 +181,7 @@ One userland gotcha worth flagging at the kernel/system level: Amix's `/bin/sh` 
 - The kmem-allocator map (buddy pools / `sptalloc` whole-page scatter; `vtop()` valid for one page; freelist links in a freed chunk's first 8 bytes) — full disassembly of `kmem_alloc`/`kmem_free`/`kmem_allocbpool`/`sptalloc`/`segkmem_alloc`/`page_get` in the shipped kernel, and the DMA-scatter corruption reproduced on a real A4000 + Z3660, from the **amix-cdfs** port @ `31e8c3b` (`NBPP = 2048` per `sys/immu.h`). ✅ See [the driver model DMA-alignment contract](../drivers/driver-model.md#the-dma-alignment-contract-a-vtopd-buffer-must-not-cross-a-page-boundary).
 - The **empty-allocator behaviour** (first-party record, 2026-11-01) ✅ (🟡/🔴 where tagged): the amix `kernel/dlm` low-memory runs, [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/tests/bench/lowmem/` (`kmsleep`) and `kernel/dlm/tests/bench/README.md` ("Low memory at first use", `53624e5`, on `master`).
 - The loadable-module facts (2026-10-29): [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/README.md`, `kernel/dlm/core/upstream.pin` (kdedon's DLM core, MIT from upstream `b736c59`, 2026-10-14; earlier commits GPL-2.0) ✅; the ashnazag project itself, <https://github.com/kdedon/ashnazag> 🟡 (not reproduced here).
+- **Commodore's remote kernel debugger** (read 2026-11-12) ✅: amix-system `usr/sys/amiga/driver/kdb/`
+  (`kdb.c`, `kdebug.c`, `kdebug.h`, `hooks.c`, `en.c`, `rkd.c`, `rkdb.c`, `Makefile`), `usr/sys/master.d/kernel.c`
+  (the `KERNEL_DEBUGGER` blocks), `usr/sys/amiga/driver/Makefile` and `aen/Makefile`; the four hook symbols and
+  their references in the stock 2.1c kernel (amix-system `kernels/2.1c/unix`, sha256 `80a1204f…`).

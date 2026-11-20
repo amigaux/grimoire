@@ -751,3 +751,10 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   EOF with a `time()` bound, then close loses nothing: 8 MiB passive downloads short 10/20 from the stock `in.ftpd`,
   0/20 patched ✅ (k46 68060-261106-66, emulation; not measured on k30). `poll(NULL, 0, 50)` took 67 ms ✅ (one
   sample). amix `userland/packages/ftpdfix` (in 1.1). Quirk 103; quirk 64's cause and fix.
+- **2026-11-12 — Commodore's remote kernel debugger.** The relink kit ships a remote kernel debugger over the A2065
+  (`usr/sys/amiga/driver/kdb`): a stub in the debugged kernel, a `/proc`-like character device (45, `kdebug`) and a
+  STREAMS driver (44, `rkd`) on the debugging host ✅. The stock 2.1c kernel keeps its four hooks (`trap_hook`,
+  `panic_hook`, `clock_hook`, `aen_packet_hook`), all null, each referenced twice ✅ (`80a1204f…`). It is switched
+  on by `KERNEL_DEBUGGER` in `master.d/kernel.c`; `kdb/exp` is commented out in the driver Makefile ✅. As shipped it
+  does not compile against the 2.1c `aen` header; with the network interface header first it compiles and links
+  under GCC 1.40.5 ✅, not booted 🟡. Kernel architecture and kernel build pages.

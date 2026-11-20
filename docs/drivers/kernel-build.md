@@ -722,6 +722,24 @@ refuse anything but the free filler
 the pre-POSIX shell warning in Step 2. One-line checklist entry:
 [quirk 28](../how-it-works/quirks.md#30-a-scripted-ed-edit-that-misses-its-address-still-writes-the-file).
 
+## The remote kernel debugger ✅ {#the-remote-kernel-debugger}
+
+Commodore's remote kernel debugger ([kernel architecture](../how-it-works/kernel-architecture.md#remote-kernel-debugger))
+is switched on in the configuration, not by changing kernel code ✅:
+
+- `master.d/kernel.c`, compiled with `KERNEL_DEBUGGER` defined, adds `kdb_init_hooks` to the kernel's
+  init table and fills two character slots: **44**, the STREAMS side (`rkd`), and **45**, the `/proc`-like
+  device (`kdebug`). Without the define both slots are empty ✅.
+- `usr/sys/amiga/driver/Makefile` already lists `kdb/exp` beside `aen/exp`, commented out, and has the
+  rule that builds it; the `aen` driver's Makefile takes the debugger's flags in `$(KDB)` ✅.
+- **As shipped it does not compile against the 2.1c Ethernet driver** ✅: its kernel files predate a field
+  the 2.1c `aen` header gained (interface statistics), so each stops at that header unless the network
+  interface header is included first. With that one addition the five kernel files compile under GCC
+  1.40.5, and a 2.1c kernel with the debugger linked in has no unresolved symbols beyond the three the
+  boot loader supplies. Such a kernel has not been booted 🟡.
+- That is why the [major-number registry](../reference/major-number-registry.md) tells drivers to avoid
+  44 and 45: empty in a normal build, taken in a debugger build ✅.
+
 ## See also
 
 - [Driver model overview](driver-model.md) — what `cdevsw`/`bdevsw`, majors/minors, and the
@@ -805,3 +823,9 @@ the pre-POSIX shell warning in Step 2. One-line checklist entry:
   in pre-renumber integrated trees; and the fail-closed pre-probe / one-edit-per-run /
   post-verify-the-row / repair-half-states pattern, each failure mode first reproduced and then
   pinned by the repos' no-box selftests.
+- **Commodore's remote kernel debugger** (read 2026-11-12) ✅: amix-system `usr/sys/amiga/driver/kdb/`
+  (`kdb.c`, `kdebug.c`, `kdebug.h`, `hooks.c`, `en.c`, `rkd.c`, `rkdb.c`, `Makefile`), `usr/sys/master.d/kernel.c`
+  (the `KERNEL_DEBUGGER` blocks), `usr/sys/amiga/driver/Makefile` and `aen/Makefile`; the four hook symbols and
+  their references in the stock 2.1c kernel (amix-system `kernels/2.1c/unix`, sha256 `80a1204f…`).
+- The compile and link of the debugger into a 2.1c kernel with GCC 1.40.5 (first-party record, 2026-11-12) ✅;
+  not booted.

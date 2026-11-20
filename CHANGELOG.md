@@ -2,6 +2,10 @@
 
 Started 2026-09-26.
 
+## 2026-11-20 — five findings: shell, UFS, libsocket, half-close, the kernel debugger (d5db299, bf24bbe, 584c095, 4bbe393, f8ca604, 73bba42)
+
+Quirk 12 gains two stock-shell traps (`: > file` empties only the first time it runs; `VAR=x func` passes nothing to a function); new quirks 100 (a whole-page UFS write not at an 8 KiB block start leaves stale pages in the cache; fixed in the amigaux kernels from 68030-261106-73 and 68060-261106-65), 101 (a non-blocking libsocket send drops what does not fit), 102 (one MSG_PEEK on a listener breaks accept) and 103 (POLLERR after a half-close); quirk 64 gains its cause and the 1.1 ftpdfix fix; networking gains a section on porting socket code to the stock libsocket; kernel architecture and kernel build document Commodore's remote kernel debugger, shipped in the relink kit and left out of the 2.1c kernel.
+
 ## 2026-11-20 — writing Amix drivers with an LLM tool (80a4ea7)
 
 New pages under drivers/llm/: the guide (what to point a tool at, the build in amix's container, packaging with apkg, the emulation-first test loop, reporting), a worked example of an X backend on the X11R6.3 server's card-neutral RTG layer (rtgCardOps, the VA2000 and ZZ9000/Z3660 patterns, the display.d card file, host-model tests), rules for real hardware when a device cannot be emulated, and a ready-to-copy AGENTS.md for a driver repository. Linked from llms.txt, the index and the X11 RTG page.

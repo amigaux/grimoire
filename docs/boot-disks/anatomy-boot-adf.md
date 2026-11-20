@@ -228,6 +228,6 @@ Expected SHA-256: `0d8af1c06b524411cc43d33c4a156afe6216ec895f50188747d0f3a6bed65
 
 - `amix_21_boot.adf` analysis via [`tools/inspect-adf.sh`](https://github.com/amigaux/grimoire/blob/master/tools/inspect-adf.sh) — bootblock hex dump, `DOS\0` magic + checksum, bootstrap/kernel strings, `xdftool` "Invalid Root Block @880", binwalk false-positive "JBOOT" hits (reproduced locally; SHA-256 `0d8af1c0…65272`, see `sources/CHECKSUMS.txt`).
 - [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §3 ("What the real boot.adf contains") and §10 ("boot.adf").
-- **Commodore boot source** (`infoblock.h`, `makeiblk.c`, `chksum.c`, `boot1.c`/`boot2.c`, `decompress.c`; Copyright 1991 CBM), published 2026-06 in the [hydra-amix repo](https://github.com/isoriano1968/hydra-amix) — confirms the IBLK `struct infoblock` fields and the SVR4-`sum` checksum. Referenced for interoperability, not redistributed.
+- **Commodore boot source** (`infoblock.h`, `makeiblk.c`, `chksum.c`, `boot1.c`/`boot2.c`, `decompress.c`; Copyright 1991 CBM), published 2026-06 in the [hydra-amix repo](https://github.com/isoriano1968/hydra-amix) — confirms the IBLK `struct infoblock` fields and the SVR4-`sum` checksum. The same files are now public in amigaux/amix-system (above), under Amiga Corporation's 2026-09-23 approval.
 - amigaunix.com Downloads (image source): <https://www.amigaunix.com/doku.php/downloads>
 - Internet Archive, *Commodore Amiga Operating Systems — AMIX*: <https://archive.org/details/commodore-amiga-operating-systems-amix>

@@ -6,7 +6,7 @@ status: draft
 
 # Running Amix in WinUAE
 
-WinUAE is the long-standing **reference emulator** for Amix ✅. It combines accurate 68030 **MMU** emulation (added in WinUAE 2.6.0, 2013) with working Amiga SCSI and tape emulation — the two things Amix cannot boot or install without. [Amiberry](emulation-amiberry.md) (8.3.0 or newer) is also a full install-and-run target, and it is the emulator the amigaux 1.0 classic 68030 kit is validated on ✅. This page gives you the complete, copy-checkable settings table and the step-by-step path to the first boot prompt. Get one of the four highlighted rows wrong (MMU, JIT, "More Compatible", or the two SCSI IDs) and Amix will either panic, freeze, or fail to find its disk.
+WinUAE is the long-standing **reference emulator** for Amix ✅. It combines accurate 68030 **MMU** emulation (added in WinUAE 2.6.0, 2013) with working Amiga SCSI and tape emulation — the two things Amix cannot boot or install without. [Amiberry](emulation-amiberry.md) (8.3.0 or newer) is also a full install-and-run target, and the emulator amigaux's media are tested on: the 1.0 classic 68030 kit, and the 1.1.x media on an emulator matrix besides real machines ✅. This page gives you the complete, copy-checkable settings table and the step-by-step path to the first boot prompt. Get one of the four highlighted rows wrong (MMU, JIT, "More Compatible", or the two SCSI IDs) and Amix will either panic, freeze, or fail to find its disk.
 
 If you want the *why* behind these settings, see [how Amix uses the hardware](../how-it-works/hardware.md). For the install itself once you have a booting emulator, see the [install walkthrough](install-walkthrough.md). For a non-Windows host, see [Running Amix in FS-UAE](emulation-fs-uae.md).
 
@@ -82,7 +82,7 @@ See the [quirks page](../how-it-works/quirks.md) for the full list of hard-coded
 
 ## After install: logging in
 
-Once Amix is installed to the SCSI ID 6 disk and you boot from it, the default post-install login password is reported to be **`wasp`** 🟡 (community-reported; not primary-verified). You will set your own root password during the `amixadm` finishing step of the install. See [first login and tour](first-login-and-tour.md).
+Once Amix is installed to the SCSI ID 6 disk and you boot from it, the default post-install login password is reported to be **`wasp`** 🟡 (community-reported; not primary-verified). You set your own root password at the first boot, when Commodore's `system.setup` asks for it ✅ (see the [install walkthrough](install-walkthrough.md#stage-6-first-boot-and-finish-with-amixadm)). See [first login and tour](first-login-and-tour.md).
 
 ## Tape-free installs
 
@@ -113,4 +113,4 @@ The tape image at SCSI ID 4 is the standard route, but a tape-free install is do
 - [amigaunix.com](https://www.amigaunix.com/doku.php/home) (install media, image checksums, requirements).
 - [Internet Archive: Commodore Amiga operating systems — Amix](https://archive.org/details/commodore-amiga-operating-systems-amix).
 - WinUAE MMU emulation since 2.6.0 (2013) — brief §8.
-- Amiberry as a full install-and-run target and the 1.0 classic kit's emulator — [Amix on Amiberry](emulation-amiberry.md); Installer-NG (not public) `docs/public-classic-README.txt` ("Tested in emulation only (Amiberry …)", "Amiberry 8.3.0 or newer") and `docs/releases/1.0.md` ("Emulator acceptance (Amiberry)").
+- Amiberry as a full install-and-run target and the 1.0 classic kit's emulator — [Amix on Amiberry](emulation-amiberry.md); amix `media/docs/public-classic-README.txt` ("Tested in emulation only (Amiberry …)", "Amiberry 8.3.0 or newer") and `media/docs/releases/1.0.md` ("Emulator acceptance (Amiberry)"); the 1.1.x test bench in amix `media/README.md`.

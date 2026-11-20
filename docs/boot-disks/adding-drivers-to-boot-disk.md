@@ -16,16 +16,17 @@ All three are tractable — the bootable-floppy format has been reverse-engineer
 | **(b) Custom bootable floppy** | install/recovery media that boots *your* kernel | ✅ boots in Amiberry (same kernel) · ✅ a **driver-modified** kernel boots + runs a **full install** (WinUAE) |
 | **(c) Self-extracting add-on disk** | *distributing* a driver to other users to install | ✅ host-verified · 🟡 not yet run on real Amix |
 
-The [amigaux 1.0](https://amigaux.org/install/) install media are built by
-the project's media builder, Installer-NG: a classic boot floppy framing a driver
-kernel (surface b, tested in emulation only) for the 68030 machines, while a Z3660 (68060) installs
-from its own self-booting `.hdf` media, not a floppy ✅. Installer-NG's repository is not public at
-present; the builder is to move into [`amigaux/amix`](https://github.com/amigaux/amix) under `media/`
-before 1.1, and its test bench stays private 🔴 (planned). This page covers hand-building
-custom-kernel media on stock 2.1.
+The amigaux install media are built by [`amigaux/amix`](https://github.com/amigaux/amix)'s `media/`
+(formerly the separate Installer-NG) as a step of `make dist` ✅. The 1.1.x set is an install CD for
+every target and both kernel lines, a network-install CD, a boot-floppy pair per kernel line and a
+Z3660 boot `.hdf`; the installs are tested on an emulator matrix and on real machines by a separate
+test bench ✅ (amix `media/README.md`). The [amigaux 1.0](https://amigaux.org/install/) media before
+them were a classic boot floppy framing a driver kernel (surface b) for the 68030 machines and a
+self-booting `.hdf` for a Z3660 ✅. This page covers hand-building custom-kernel media on stock 2.1.
 
 A driver in stock Amix is **statically linked into a monolithic kernel — there are no loadable modules** ✅
-([one third-party exception](../how-it-works/kernel-architecture.md#loadable-modules)), so
+(amigaux 1.1 and later load drivers as modules, installed as `-k30`/`-k46` packages with no relink:
+[loadable modules](../drivers/loadable-modules.md)), so on a stock kernel
 every path below ultimately means "relink the kernel with your driver, then deliver that kernel." The
 relink is the same in all three; they differ only in packaging.
 
@@ -182,7 +183,8 @@ What you get and what to watch:
   bootstrap relocation (the loader consumes the compact `.rel.boot` table `elf2brel` builds, not standard
   ELF relocations). On a native on-box `make`, `elf2brel` runs automatically; a **cross-built** kernel
   must pass through `elf2brel` **explicitly** first (there is a host Python port,
-  `amix-kerntools/tools/elf2brel.py`, mirroring `amiga/boot/elf2brel.c`). `build-bootfloppy.sh` does
+  [`kernel/k30/tools/elf2brel.py`](https://github.com/amigaux/amix/blob/master/kernel/k30/tools/elf2brel.py)
+  in amigaux/amix, mirroring `amiga/boot/elf2brel.c`). `build-bootfloppy.sh` does
   **not** run `elf2brel` — it only ever worked because it re-framed the already-brel *donor* kernel. ✅
   (Proven 2026-07-05: a raw-ET_REL floppy `D245`'d; re-framing the brel booted and ran a full install.)
   **Scope note (2026-07-16) ✅:** this brel requirement is the **boot-floppy** path only. The
@@ -240,8 +242,9 @@ these are the remaining loose ends, none blocking:
 - ✅ **Driver-modified kernel** end-to-end (WinUAE, 2026-07-05): a floppy whose kernel was relinked with
   new drivers (a4091 + z3660scsi, cross-built on the host and `elf2brel`'d) boots and runs a **full Amix
   install** from tape to disk; the laid-down system then boots from the disk into first-boot config.
-  (The install/floppy kernel carried the drivers; making the
-  *installed* system's boot-partition kernel carry them is a further step.)
+  (The install/floppy kernel carried the drivers; on a stock kernel, making the *installed* system's
+  boot-partition kernel carry them is a further step. On amigaux 1.1.x a driver package and `kbootset`
+  do it.)
 - ✅ **Full install** through the tape stage: done under WinUAE. Note the emulator specifics — the install
   **target disk must be on the A3000 onboard SCSI**, not the a4091 (WinUAE emulates a4091 **tapes** but
   not a4091 hard disks), and the tape (ID 4) must sit on the **same controller / card 0** as the disk
@@ -270,7 +273,7 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   a host-cross-linked universal kernel (a4091 + z3660scsi), `elf2brel`'d to brel (`e_type=0xff00`) and framed
   with `build-bootfloppy.sh`, boots and drives the Amiga UNIX installer through a full install (partition →
   format → read tape → install all package sets → laid-down system boots). Framing a raw `ld -r` ET_REL
-  (`e_type=0x1`) instead Guru's `D245 4C41` at relocation. From `amix-kerntools/tools/elf2brel.py` (port of
+  (`e_type=0x1`) instead Guru's `D245 4C41` at relocation. From amix `kernel/k30/tools/elf2brel.py`, formerly in amix-kerntools (port of
   `amiga/boot/elf2brel.c`).
 - [Reverse-Engineering the Boot Floppy](reverse-engineering-boot-adf.md) and research brief §3, §10, §13
   ([`../../sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md)): the `compress`/LZW kernel at
@@ -282,7 +285,7 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   flow; the five-part `boot1 + makeiblk(boot2) + boot2 + makeiblk(unix) + unix` `dd` to
   BOOTPART = `/dev/dsk/c6d0s3`; the by-hand `c8d0s3` pipeline for a *different* disk; the
   "never `make install` an unverified kernel" safety rule) — the
-  [amix-a4091 README](https://github.com/jusii/amix-a4091#build--run-emulation), build/install
+  [A4091 driver README](https://github.com/amigaux/amix/blob/master/kernel/drivers/a4091/README.md#build--run-emulation) (amix `kernel/drivers/a4091`, formerly amix-a4091), build/install
   steps 3–4 (clean-gate the build; the by-hand `c8d0s3` `dd` pipeline; never `make install` onto
   the working disk; a corrupt boot-partition write bricks that disk); the stock `/usr/sys` and
   `/stand` install flow on the [kernel-build page](../drivers/kernel-build.md#make-install-does-not-update-standunix-copy-it-yourself);
@@ -296,7 +299,7 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   [`github.com/isoriano1968/hydra-amix`](https://github.com/isoriano1968/hydra-amix).
 - Install media (user-supplied): [amigaunix.com](https://www.amigaunix.com/doku.php/downloads) ·
   [archive.org](https://archive.org/details/commodore-amiga-operating-systems-amix).
-- amigaux 1.0 install media — the Installer-NG README (not public)
-  (the classic boot floppy frames the K030-U-FD install kernel; a Z3660 installs from its own
-  self-booting `.hdf` media) and the [amigaux.org Downloads](https://amigaux.org/downloads/) page
-  (classic kit tested in emulation only).
+- amigaux install media — amix [`media/README.md`](https://github.com/amigaux/amix/blob/master/media/README.md)
+  (the 1.1.x set and its test bench), read 2026-11-20 ✅; the 1.0 media (the classic boot floppy frames the
+  K030-U-FD install kernel; a Z3660 installs from its own self-booting `.hdf`) in amix
+  `media/docs/releases/1.0.md` and the [amigaux.org Downloads](https://amigaux.org/downloads/) page.

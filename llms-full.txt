@@ -7504,7 +7504,7 @@ status: draft
 
 # Running Amix in WinUAE
 
-WinUAE is the long-standing **reference emulator** for Amix ✅. It combines accurate 68030 **MMU** emulation (added in WinUAE 2.6.0, 2013) with working Amiga SCSI and tape emulation — the two things Amix cannot boot or install without. [Amiberry](emulation-amiberry.md) (8.3.0 or newer) is also a full install-and-run target, and it is the emulator the amigaux 1.0 classic 68030 kit is validated on ✅. This page gives you the complete, copy-checkable settings table and the step-by-step path to the first boot prompt. Get one of the four highlighted rows wrong (MMU, JIT, "More Compatible", or the two SCSI IDs) and Amix will either panic, freeze, or fail to find its disk.
+WinUAE is the long-standing **reference emulator** for Amix ✅. It combines accurate 68030 **MMU** emulation (added in WinUAE 2.6.0, 2013) with working Amiga SCSI and tape emulation — the two things Amix cannot boot or install without. [Amiberry](emulation-amiberry.md) (8.3.0 or newer) is also a full install-and-run target, and the emulator amigaux's media are tested on: the 1.0 classic 68030 kit, and the 1.1.x media on an emulator matrix besides real machines ✅. This page gives you the complete, copy-checkable settings table and the step-by-step path to the first boot prompt. Get one of the four highlighted rows wrong (MMU, JIT, "More Compatible", or the two SCSI IDs) and Amix will either panic, freeze, or fail to find its disk.
 
 If you want the *why* behind these settings, see [how Amix uses the hardware](../how-it-works/hardware.md). For the install itself once you have a booting emulator, see the [install walkthrough](install-walkthrough.md). For a non-Windows host, see [Running Amix in FS-UAE](emulation-fs-uae.md).
 
@@ -7580,7 +7580,7 @@ See the [quirks page](../how-it-works/quirks.md) for the full list of hard-coded
 
 ## After install: logging in
 
-Once Amix is installed to the SCSI ID 6 disk and you boot from it, the default post-install login password is reported to be **`wasp`** 🟡 (community-reported; not primary-verified). You will set your own root password during the `amixadm` finishing step of the install. See [first login and tour](first-login-and-tour.md).
+Once Amix is installed to the SCSI ID 6 disk and you boot from it, the default post-install login password is reported to be **`wasp`** 🟡 (community-reported; not primary-verified). You set your own root password at the first boot, when Commodore's `system.setup` asks for it ✅ (see the [install walkthrough](install-walkthrough.md#stage-6-first-boot-and-finish-with-amixadm)). See [first login and tour](first-login-and-tour.md).
 
 ## Tape-free installs
 
@@ -7611,7 +7611,7 @@ The tape image at SCSI ID 4 is the standard route, but a tape-free install is do
 - [amigaunix.com](https://www.amigaunix.com/doku.php/home) (install media, image checksums, requirements).
 - [Internet Archive: Commodore Amiga operating systems — Amix](https://archive.org/details/commodore-amiga-operating-systems-amix).
 - WinUAE MMU emulation since 2.6.0 (2013) — brief §8.
-- Amiberry as a full install-and-run target and the 1.0 classic kit's emulator — [Amix on Amiberry](emulation-amiberry.md); Installer-NG (not public) `docs/public-classic-README.txt` ("Tested in emulation only (Amiberry …)", "Amiberry 8.3.0 or newer") and `docs/releases/1.0.md` ("Emulator acceptance (Amiberry)").
+- Amiberry as a full install-and-run target and the 1.0 classic kit's emulator — [Amix on Amiberry](emulation-amiberry.md); amix `media/docs/public-classic-README.txt` ("Tested in emulation only (Amiberry …)", "Amiberry 8.3.0 or newer") and `media/docs/releases/1.0.md` ("Emulator acceptance (Amiberry)"); the 1.1.x test bench in amix `media/README.md`.
 
 
 ================================================================================
@@ -7729,8 +7729,8 @@ This **supersedes** the long-standing "Amix can't install on Amiberry" status: t
 [BlitterStudio/amiberry #1376](https://github.com/BlitterStudio/amiberry/issues/1376) ("Add A3000 SCSI
 controller and tape support for Amiga UNIX") has been **implemented** in current Amiberry. Older 5.7.x
 / 7.x builds genuinely lacked it (and reportedly crashed with an A3000 config) 🟡 (older versions).
-**Use 8.3.0 or newer**: builds before 8.3.0 boot Amix but silently corrupt data under paging — the
-amigaux 1.0 classic kit's emulator requirement ✅. The 8.1.6 rows below are the first-hand record of
+**Use 8.3.0 or newer**: builds before 8.3.0 boot Amix but silently corrupt data under paging (the
+requirement found for amigaux 1.0's classic kit) ✅. The 8.1.6 rows below are the first-hand record of
 what the 8.x line can do.
 
 ## What works (Amiberry 8.1.6)
@@ -7849,7 +7849,7 @@ The earlier "Amix won't run on AGA / white screen" belief was a Kickstart limita
 — with an A4000 3.x ROM, Amix boots on AGA and its console works. (KS 3.0 also runs on the A3000, so one
 KS *version* spans both machines.) 🔴/✅
 
-The project's working configs (in the A4091 repo; ROM/HDF paths point at user-supplied images):
+The project's working configs (in amix `kernel/drivers/a4091/`; ROM/HDF paths point at user-supplied images):
 
 | Config file | Machine | Purpose |
 |---|---|---|
@@ -7943,12 +7943,12 @@ instance <n>` when it falls back, unless its IPC logging is off).
 - The **2026-09-29 stock-kernel RAM-layout measurement** ✅ — on the emulated bench the same 64 MB A3000 motherboard bank boots a kernel that probes for the A3000 SCSI and stops the pinned stock kernel at `s5mountroot VOP_OPEN error 6` (no card 0), symbolised against the stock `autocon()` load-address guess (first-party record, 2026-09-29; [quirks §57](../how-it-works/quirks.md#57-loader-placement-a3000-scsi)).
 - First-hand, 2026-06, Amiberry **8.1.6**: an installed Amix 2.1 boots to login from the `scsi6_a3000` hardfile; the GUI *Hard drives/CD* page shows `A3000 SCSI:6 → HDF` and `A3000 SCSI:4 → TAPE` mounted (RW) with an "Add Tape Drive…" button; a full from-tape install completes on Amiberry 8.1.6 (confirmed first-hand, 2026-06). Working config: `scsi_a3000=true`, `hardfile2=…,scsi6_a3000`, `uaehf1=tape0,…,scsi4_a3000`.
 - [BlitterStudio/amiberry #1376](https://github.com/BlitterStudio/amiberry/issues/1376) — "Add A3000 SCSI controller and tape support for amix" (the requested support is present in 8.x).
-- The amigaux 1.0 emulator requirement (Amiberry 8.3.0 or newer; older versions corrupt data under paging) — Installer-NG (not public) `docs/public-classic-README.txt` and the [amigaux.org emulator install page](https://amigaux.org/install/emulator/); the 1.0 configs were accepted on stock Amiberry v8.3.0 (`docs/releases/1.0.md`, "Emulator acceptance (Amiberry)").
+- The amigaux 1.0 emulator requirement (Amiberry 8.3.0 or newer; older versions corrupt data under paging) — amix `media/docs/public-classic-README.txt` and the [amigaux.org emulator install page](https://amigaux.org/install/emulator/); the 1.0 configs were accepted on stock Amiberry v8.3.0 (amix `media/docs/releases/1.0.md`, "Emulator acceptance (Amiberry)").
 - Research brief §2 (tape ID 4 hard-coded; disk ID 6 by convention) and §9 (`dd … /dev/rmt/4hn | cpio` install flow).
 - [BlitterStudio/amiberry](https://github.com/BlitterStudio/amiberry) project repository.
-- The A4091-on-Amix project, [`jusii/amix-a4091`](https://github.com/jusii/amix-a4091) — its `README.md` (Amiberry-proven on A3000/ECS and A4000/AGA profiles; `amix-a4091-boot-aga.uae` with a Kickstart 3.0 A4000 ROM for root on the A4091, `amix-dbg.uae` for the A3000 + A4091 case) and the sample configs at its root (`amix-a4091-boot.uae`, `amix-a4091-boot-aga.uae`, `amix-dbg.uae`), reproduced locally ✅; A4091 product id `0x02020054` verified in `src/a4091-blk.c`. The A3000(ECS)/A4000(AGA) Kickstart matrix, including the KS 2.04 white screen on AGA: first-party record, 2026-06-05 ✅. Screenshot wrapper: [`tools/amishot.sh`](https://github.com/amigaux/grimoire/blob/master/tools/amishot.sh).
+- The A4091-on-Amix project, now amix [`kernel/drivers/a4091`](https://github.com/amigaux/amix/tree/master/kernel/drivers/a4091) (formerly amix-a4091) — its `README.md` (Amiberry-proven on A3000/ECS and A4000/AGA profiles; `amix-a4091-boot-aga.uae` with a Kickstart 3.0 A4000 ROM for root on the A4091, `amix-dbg.uae` for the A3000 + A4091 case) and the sample configs at its root (`amix-a4091-boot.uae`, `amix-a4091-boot-aga.uae`, `amix-dbg.uae`), reproduced locally ✅; A4091 product id `0x02020054` verified in `src/a4091-blk.c`. The A3000(ECS)/A4000(AGA) Kickstart matrix, including the KS 2.04 white screen on AGA: first-party record, 2026-06-05 ✅. Screenshot wrapper: [`tools/amishot.sh`](https://github.com/amigaux/grimoire/blob/master/tools/amishot.sh).
 - [A4091/a4091-software](https://github.com/A4091/a4091-software) — the A4091 autoboot ROM (`amiga-boot-a4091.rom`) and the `ncr53cxxx` SCRIPTS assembler.
-- The **Installer-NG** blank-disk→bootable-install work (the installer not public; [`jusii/amix-packagemanager`](https://github.com/jusii/amix-packagemanager); first-party record, 2026-07-22/24), on Amiberry and a real A4000+Z3660 (install-run captures, s5/UFS state reads, and the on-metal digest attestation) ✅ (🟡 where tagged).
+- The **Installer-NG** blank-disk→bootable-install work (Installer-NG, now amix `media/`; apkg, now amix `userland/pkgtools`; first-party record, 2026-07-22/24), on Amiberry and a real A4000+Z3660 (install-run captures, s5/UFS state reads, and the on-metal digest attestation) ✅ (🟡 where tagged).
 - A first-party source read of upstream
   [BlitterStudio/amiberry](https://github.com/BlitterStudio/amiberry), 2026-07-26 ✅ — the
   `default_prefs()` initialisation (`src/cfgfile.cpp`), the four non-equivalent config keys and why only
@@ -8846,7 +8846,7 @@ For the fuller networking picture (STREAMS TCP/IP, TLI + sockets, the A2065/Hydr
 
 Be honest with yourself about the trade-off:
 
-- **Emulation** is easier to set up, snapshot, and recover. The driver and installer work is done on [Amiberry](emulation-amiberry.md) (it emulates the A3000 SCSI disk + tape) first and then on metal, and the amigaux 1.0 classic 68030 kit is validated on **Amiberry 8.3.0 or newer** ✅. [WinUAE](emulation-winuae.md) remains a supported reference config. Start there: [Amiberry](emulation-amiberry.md), [WinUAE](emulation-winuae.md), [FS-UAE](emulation-fs-uae.md).
+- **Emulation** is easier to set up, snapshot, and recover. The driver and installer work is done on [Amiberry](emulation-amiberry.md) (it emulates the A3000 SCSI disk + tape) first and then on metal; amigaux's media are tested on **Amiberry 8.3.0 or newer** and, for 1.1.x, on real machines too ✅. [WinUAE](emulation-winuae.md) remains a supported reference config. Start there: [Amiberry](emulation-amiberry.md), [WinUAE](emulation-winuae.md), [FS-UAE](emulation-fs-uae.md).
 - **Real hardware** gives you authenticity and native I/O, but you inherit every hard limit on this page plus the sourcing problem for 68030 boards, FPUs, working SCSI/tape, and 10 Mbps networking.
 
 If your goal is to *develop* drivers or explore the system, emulation is the pragmatic choice. If your goal is to run Amix on the metal it was written for, this page is your checklist.
@@ -8854,7 +8854,7 @@ If your goal is to *develop* drivers or explore the system, emulation is the pra
 ## See also
 - [Installation walkthrough](install-walkthrough.md) — the OS install steps (partitioning, streaming the distribution, kernel build, patch disk) that run identically on real hardware
 - [Hardware reference](../how-it-works/hardware.md) — supported cards, AUTOCONFIG, the RAM envelope (and the retracted 16 MB ceiling), CPU/MMU requirements in depth
-- [Amix on Amiberry](emulation-amiberry.md) — the recommended way to run Amix today (Amiberry 8.3.0 or newer, the emulator the 1.0 classic 68030 kit is validated on); [Emulation with WinUAE](emulation-winuae.md) remains an alternative reference config
+- [Amix on Amiberry](emulation-amiberry.md) — the recommended way to run Amix today (Amiberry 8.3.0 or newer, the emulator amigaux tests its media on); [Emulation with WinUAE](emulation-winuae.md) remains an alternative reference config
 - [Filesystems and disks](../how-it-works/filesystems-and-disks.md) — RDB layout, the 2 MB boot partition, UFS vs s5
 - [Networking](../how-it-works/networking.md) — STREAMS TCP/IP, DNS, NFS, the A2065
 - [Quirks checklist](../how-it-works/quirks.md) — the SCSI-ID, RAM-ceiling, and Y2K gotchas in one place
@@ -8873,7 +8873,7 @@ If your goal is to *develop* drivers or explore the system, emulation is the pra
 - `amix_21_root.adf` analysis via `tools/inspect-adf.sh` (install scripts: `BPART=/dev/dsk/c${SCSI}d0s${BOOTPART}`, `/dev/rmt/4h`, `viper.README`) ✅.
 - Research brief §11 (Networking: A2065 `aen0`, static IP only, DNS off by default + relink recipe, `route add default … 1`, NFS, SLIP/PPP) ✅/🟡.
 - Research brief §8 (Emulation: WinUAE reference target; Amiberry 8.x adds A3000 SCSI + tape support — BlitterStudio/amiberry issue #1376, implemented). First-hand confirmation on Amiberry 8.1.6.
-- Amiberry-first validation and the 1.0 emulator — Installer-NG (not public) `README.md` ("Validation is emulation-first, on a repo-pinned Amiberry build, before anything touches real hardware"), `docs/public-classic-README.txt` ("Amiberry 8.3.0 or newer") and `docs/releases/1.0.md` ("Emulator acceptance (Amiberry)"); [`jusii/amix-a4091`](https://github.com/jusii/amix-a4091) `README.md` ("proven in emulation (Amiberry)").
+- Amiberry-first validation and the 1.0 emulator — Installer-NG's `README.md` ("Validation is emulation-first, on a repo-pinned Amiberry build, before anything touches real hardware"; Installer-NG is now amix `media/`, whose `README.md` describes the 1.1.x emulator matrix and real-machine tests), `media/docs/public-classic-README.txt` ("Amiberry 8.3.0 or newer") and `media/docs/releases/1.0.md` ("Emulator acceptance (Amiberry)"); amix `kernel/drivers/a4091/README.md`, formerly amix-a4091 ("proven in emulation (Amiberry)").
 - ZuluSCSI/flash-SCSI substitution, old hub / media-converter need, and the byte-level tape-free recipe: **community-reported (🟡)**, retro-Amiga community practice and comp.unix.amiga; not primary-verified in any Amix source.
 - The **Z3660** Amix-interop firmware fork — the single Amix window (compile-time fixed at 16 MB via `AMIX_A3000MEM_MB` in the investigation-era firmware, since sized by the `amix_ram` knob), the dummy bank preventing coalescing past it, the `amix_mode`-forces-CPU-RAM-off contract, and the "not in section 1" panics coming only from >16 MB / split windows: read from `Z3660_emu/src/uae/uae_emulator.cpp`, `Z3660/src/config_file.c`, `AMIX_SCSI_design.md`, `docs/AMIX.md` ✅.
 - First-party **thermal soak session**, real A4000D + Z3660, 2026-08-31 ✅ — the Amiga keyboard as a
@@ -8881,7 +8881,7 @@ If your goal is to *develop* drivers or explore the system, emulation is the pra
   the confirmation-prompt race. Performance and temperature figures from the same session are on
   [performance benchmarks](../how-it-works/performance-benchmarks.md).
 - The **2026-08-14/15 installer-minted root image**, real A4000 + Z3660 ✅ — a root image minted **by** the installer rather than inherited, attested from the box's own package-contents database and cold-booted twice; and the ≈270 s cold-power-on-to-networked-multiuser figure measured across those two boots.
-- The **Installer-NG** blank-disk→bootable-install work (the installer not public; [`jusii/amix-packagemanager`](https://github.com/jusii/amix-packagemanager), released as amigaux 1.0; first-party record, 2026-07-22/24), which root-caused these platform behaviours on the Amiberry bench and the real A4000+Z3660 (acceptance-run captures, s5/UFS state reads, and the on-metal digest attestation) ✅ (🟡 where tagged).
+- The **Installer-NG** blank-disk→bootable-install work (Installer-NG, now amix `media/`, and apkg, now amix `userland/pkgtools`, released as amigaux 1.0; first-party record, 2026-07-22/24), which root-caused these platform behaviours on the Amiberry bench and the real A4000+Z3660 (acceptance-run captures, s5/UFS state reads, and the on-metal digest attestation) ✅ (🟡 where tagged).
 
 
 ================================================================================
@@ -9030,7 +9030,7 @@ The window manager in the color/OpenLook world is **`olwm` / `olwsm`** ✅, whic
 
 ### A third option: RTG cards
 
-A modern alternative to both is the **RTG path**. On a **Z3660**, the amigaux 1.0 card ships a ready-installed RTG X desktop ✅: the X11R6.3 `Xzz9000` server on the card's onboard graphics through the [`jusii/amix-z3660rtg`](https://github.com/jusii/amix-z3660rtg) driver; the same server runs on an MNT **ZZ9000** — see the [x11r6.3-amix case study](../drivers/case-studies/x11r63-zz9000.md). The older community route is an X11R5 server (`Xrtg`) on a Zorro II framebuffer card such as the MNT VA2000; see the [Xrtg case study](../drivers/case-studies/xrtg.md) and [VA2000 driver case study](../drivers/case-studies/va2000.md).
+A modern alternative to both is the **RTG path**. On amigaux 1.1.x the `x11r63` package's X11R6.3 server, `Xrtg` (also installed as `Xzz9000` and `X`), drives the Z3660's onboard graphics, an MNT **ZZ9000** or an MNT **VA2000**, through the `z3660rtg` and `va2000` module packages, and `xstart` starts it from the card's file in `/etc/display.d` ✅ (amix `userland/packages/x11r6.3`; [worked example](../drivers/llm/x-backend-example.md), [x11r6.3 case study](../drivers/case-studies/x11r63-zz9000.md)). The amigaux 1.0 card for the Z3660 shipped a ready-installed RTG desktop on the same server under its earlier name, `Xzz9000` ✅. The older community route is an X11R5 server (also called `Xrtg`) on a framebuffer card such as the MNT VA2000; see the [Xrtg case study](../drivers/case-studies/xrtg.md) and [VA2000 driver case study](../drivers/case-studies/va2000.md).
 
 ### X keymap quirks
 
@@ -9093,7 +9093,7 @@ When you're ready to do real work, the next stops are the [commands cheat-sheet]
 - `asokero/va2000-amix` install-script gotcha (Amix `/bin/sh` has no `$(...)`, no `grep -q`) — https://github.com/asokero/va2000-amix (brief §6)
 - `amix_21_patch.adf` analysis (`#!/sbin/sh` header, `uname -v` `^2\.1.* 08004..$` match) via `tools/inspect-adf.sh` (brief §10)
 - amigaunix.com DokuWiki pages: x11, networking, tips-tricks, y2k-dst — https://www.amigaunix.com/doku.php/home
-- The amigaux 1.0 RTG desktop — Installer-NG (not public) `docs/release-notes-amigaux-1.0.md` ("a ready-installed Amix desktop (RTG)") and `docs/releases/1.0.md` (`k1-desktop-rtg.hdf`); the [amigaux.org first-boot page](https://amigaux.org/docs/first-boot/) (`startx-rtg`, OPEN LOOK on the Z3660's RTG); [`jusii/amix-z3660rtg`](https://github.com/jusii/amix-z3660rtg) `README.md` (the Z3660 target and the cross-built `Xzz9000`).
+- The amigaux 1.0 RTG desktop — amix `media/docs/release-notes-amigaux-1.0.md` ("a ready-installed Amix desktop (RTG)") and `media/docs/releases/1.0.md` (`k1-desktop-rtg.hdf`); the [amigaux.org first-boot page](https://amigaux.org/docs/first-boot/) (`startx-rtg`, OPEN LOOK on the Z3660's RTG). The 1.1.x RTG path — amix `userland/packages/x11r6.3` (`package.sh`, `README.md`), `kernel/drivers/z3660rtg` (pin of [amigaux/amix-z3660rtg](https://github.com/amigaux/amix-z3660rtg)) and `kernel/drivers/va2000`, read 2026-11-20 ✅.
 - X on AGA — [`hmlio/amix-x11-aga`](https://github.com/hmlio/amix-x11-aga) `README.md` and `docs/design.md` (stock X11R4 mono runs on AGA; `Xaga` 16/256 colours) 🟡, third-party, not reproduced here.
 
 
@@ -16772,7 +16772,7 @@ Expected SHA-256: `0d8af1c06b524411cc43d33c4a156afe6216ec895f50188747d0f3a6bed65
 
 - `amix_21_boot.adf` analysis via [`tools/inspect-adf.sh`](https://github.com/amigaux/grimoire/blob/master/tools/inspect-adf.sh) — bootblock hex dump, `DOS\0` magic + checksum, bootstrap/kernel strings, `xdftool` "Invalid Root Block @880", binwalk false-positive "JBOOT" hits (reproduced locally; SHA-256 `0d8af1c0…65272`, see `sources/CHECKSUMS.txt`).
 - [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §3 ("What the real boot.adf contains") and §10 ("boot.adf").
-- **Commodore boot source** (`infoblock.h`, `makeiblk.c`, `chksum.c`, `boot1.c`/`boot2.c`, `decompress.c`; Copyright 1991 CBM), published 2026-06 in the [hydra-amix repo](https://github.com/isoriano1968/hydra-amix) — confirms the IBLK `struct infoblock` fields and the SVR4-`sum` checksum. Referenced for interoperability, not redistributed.
+- **Commodore boot source** (`infoblock.h`, `makeiblk.c`, `chksum.c`, `boot1.c`/`boot2.c`, `decompress.c`; Copyright 1991 CBM), published 2026-06 in the [hydra-amix repo](https://github.com/isoriano1968/hydra-amix) — confirms the IBLK `struct infoblock` fields and the SVR4-`sum` checksum. The same files are now public in amigaux/amix-system (above), under Amiga Corporation's 2026-09-23 approval.
 - amigaunix.com Downloads (image source): <https://www.amigaunix.com/doku.php/downloads>
 - Internet Archive, *Commodore Amiga Operating Systems — AMIX*: <https://archive.org/details/commodore-amiga-operating-systems-amix>
 
@@ -16875,7 +16875,7 @@ The install driver is not an anonymous blob you have to carve out of the image �
 Two identity facts to pin while the image is open ✅ (first-party, 2026-07-31):
 
 - `/etc/rdb` on this floppy is **18,416 bytes, md5 `6cacf95f738abea7cfddc6bb9ebf28e7`**.
-- A rebuilt install miniroot (the Installer-NG media) carries a **byte-identical** copy of that binary — so `rdb` behaviour proven against the rebuilt media is the stock binary's behaviour, and vice versa. That identity is what transfers the bench-proven unit conventions on the filesystems page to the stock installer.
+- A rebuilt install miniroot (the amigaux install media, built by amix `media/`, formerly Installer-NG) carries a **byte-identical** copy of that binary — so `rdb` behaviour proven against the rebuilt media is the stock binary's behaviour, and vice versa. That identity is what transfers the bench-proven unit conventions on the filesystems page to the stock installer.
 
 ## The install / partition logic
 
@@ -17056,7 +17056,7 @@ Both require `binwalk`/`strings`; `inspect-adf.sh` additionally uses `xdftool` (
 - Master research brief, §9 (installation flow) and §10 (root.adf anatomy); §2 (SCSI ids — tape hard-coded at 4, disk 6 by convention; RAM ceiling); §13 gap #8 (RDB partition type IDs).
 - SHA-256 cross-check: `sources/CHECKSUMS.txt`.
 - Disk image (not redistributed here): [amigaunix.com](https://www.amigaunix.com/doku.php/home) / [archive.org Amiga UNIX](https://archive.org/details/commodore-amiga-operating-systems-amix).
-- The **Installer-NG** author-path proof (not public, 2026-07-31) ✅ — the stock root floppy's install script read by path (`/etc/profile`) with an s5 filesystem reader, matching the carved script text above; `/etc/rdb` md5 `6cacf95f738abea7cfddc6bb9ebf28e7` (18,416 B), byte-identical between the stock floppy and the rebuilt install miniroot.
+- The **Installer-NG** author-path proof (2026-07-31; Installer-NG is now amix `media/`, its rebuilt miniroot in `media/docs/miniroot.md`) ✅ — the stock root floppy's install script read by path (`/etc/profile`) with an s5 filesystem reader, matching the carved script text above; `/etc/rdb` md5 `6cacf95f738abea7cfddc6bb9ebf28e7` (18,416 B), byte-identical between the stock floppy and the rebuilt install miniroot.
 
 
 ================================================================================
@@ -17539,7 +17539,7 @@ see [Adding Drivers to a Custom Boot Disk](adding-drivers-to-boot-disk.md).
   (the `struct infoblock` / IBLK fields), `makeiblk.c` + `chksum.c` (the SVR4-`sum` checksum and how the
   IBLK is built), `boot1.c`/`boot2.c` (the runtime bootstrap consuming `ib_size`/`ib_fullsize`/`ib_chksum`/`ib_bind`
   and the overrun/checksum guards), and `decompress.c` (the LZW decoder + `rmask[]` table). These confirm
-  the black-box RE above. ✅ Proprietary Commodore material — referenced for interoperability, **not** redistributed.
+  the black-box RE above ✅. The same files are now public in amigaux/amix-system (first entry), under Amiga Corporation's 2026-09-23 approval.
 - Unix `compress`/`.Z` LZW format (magic `1f 9d`, flags byte = block-mode | maxbits).
 - ELF32 header fields for size recovery (`e_shoff`, `e_shnum`, `e_shentsize`).
 
@@ -17566,16 +17566,17 @@ All three are tractable — the bootable-floppy format has been reverse-engineer
 | **(b) Custom bootable floppy** | install/recovery media that boots *your* kernel | ✅ boots in Amiberry (same kernel) · ✅ a **driver-modified** kernel boots + runs a **full install** (WinUAE) |
 | **(c) Self-extracting add-on disk** | *distributing* a driver to other users to install | ✅ host-verified · 🟡 not yet run on real Amix |
 
-The [amigaux 1.0](https://amigaux.org/install/) install media are built by
-the project's media builder, Installer-NG: a classic boot floppy framing a driver
-kernel (surface b, tested in emulation only) for the 68030 machines, while a Z3660 (68060) installs
-from its own self-booting `.hdf` media, not a floppy ✅. Installer-NG's repository is not public at
-present; the builder is to move into [`amigaux/amix`](https://github.com/amigaux/amix) under `media/`
-before 1.1, and its test bench stays private 🔴 (planned). This page covers hand-building
-custom-kernel media on stock 2.1.
+The amigaux install media are built by [`amigaux/amix`](https://github.com/amigaux/amix)'s `media/`
+(formerly the separate Installer-NG) as a step of `make dist` ✅. The 1.1.x set is an install CD for
+every target and both kernel lines, a network-install CD, a boot-floppy pair per kernel line and a
+Z3660 boot `.hdf`; the installs are tested on an emulator matrix and on real machines by a separate
+test bench ✅ (amix `media/README.md`). The [amigaux 1.0](https://amigaux.org/install/) media before
+them were a classic boot floppy framing a driver kernel (surface b) for the 68030 machines and a
+self-booting `.hdf` for a Z3660 ✅. This page covers hand-building custom-kernel media on stock 2.1.
 
 A driver in stock Amix is **statically linked into a monolithic kernel — there are no loadable modules** ✅
-([one third-party exception](../how-it-works/kernel-architecture.md#loadable-modules)), so
+(amigaux 1.1 and later load drivers as modules, installed as `-k30`/`-k46` packages with no relink:
+[loadable modules](../drivers/loadable-modules.md)), so on a stock kernel
 every path below ultimately means "relink the kernel with your driver, then deliver that kernel." The
 relink is the same in all three; they differ only in packaging.
 
@@ -17732,7 +17733,8 @@ What you get and what to watch:
   bootstrap relocation (the loader consumes the compact `.rel.boot` table `elf2brel` builds, not standard
   ELF relocations). On a native on-box `make`, `elf2brel` runs automatically; a **cross-built** kernel
   must pass through `elf2brel` **explicitly** first (there is a host Python port,
-  `amix-kerntools/tools/elf2brel.py`, mirroring `amiga/boot/elf2brel.c`). `build-bootfloppy.sh` does
+  [`kernel/k30/tools/elf2brel.py`](https://github.com/amigaux/amix/blob/master/kernel/k30/tools/elf2brel.py)
+  in amigaux/amix, mirroring `amiga/boot/elf2brel.c`). `build-bootfloppy.sh` does
   **not** run `elf2brel` — it only ever worked because it re-framed the already-brel *donor* kernel. ✅
   (Proven 2026-07-05: a raw-ET_REL floppy `D245`'d; re-framing the brel booted and ran a full install.)
   **Scope note (2026-07-16) ✅:** this brel requirement is the **boot-floppy** path only. The
@@ -17790,8 +17792,9 @@ these are the remaining loose ends, none blocking:
 - ✅ **Driver-modified kernel** end-to-end (WinUAE, 2026-07-05): a floppy whose kernel was relinked with
   new drivers (a4091 + z3660scsi, cross-built on the host and `elf2brel`'d) boots and runs a **full Amix
   install** from tape to disk; the laid-down system then boots from the disk into first-boot config.
-  (The install/floppy kernel carried the drivers; making the
-  *installed* system's boot-partition kernel carry them is a further step.)
+  (The install/floppy kernel carried the drivers; on a stock kernel, making the *installed* system's
+  boot-partition kernel carry them is a further step. On amigaux 1.1.x a driver package and `kbootset`
+  do it.)
 - ✅ **Full install** through the tape stage: done under WinUAE. Note the emulator specifics — the install
   **target disk must be on the A3000 onboard SCSI**, not the a4091 (WinUAE emulates a4091 **tapes** but
   not a4091 hard disks), and the tape (ID 4) must sit on the **same controller / card 0** as the disk
@@ -17820,7 +17823,7 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   a host-cross-linked universal kernel (a4091 + z3660scsi), `elf2brel`'d to brel (`e_type=0xff00`) and framed
   with `build-bootfloppy.sh`, boots and drives the Amiga UNIX installer through a full install (partition →
   format → read tape → install all package sets → laid-down system boots). Framing a raw `ld -r` ET_REL
-  (`e_type=0x1`) instead Guru's `D245 4C41` at relocation. From `amix-kerntools/tools/elf2brel.py` (port of
+  (`e_type=0x1`) instead Guru's `D245 4C41` at relocation. From amix `kernel/k30/tools/elf2brel.py`, formerly in amix-kerntools (port of
   `amiga/boot/elf2brel.c`).
 - [Reverse-Engineering the Boot Floppy](reverse-engineering-boot-adf.md) and research brief §3, §10, §13
   ([`../../sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md)): the `compress`/LZW kernel at
@@ -17832,7 +17835,7 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   flow; the five-part `boot1 + makeiblk(boot2) + boot2 + makeiblk(unix) + unix` `dd` to
   BOOTPART = `/dev/dsk/c6d0s3`; the by-hand `c8d0s3` pipeline for a *different* disk; the
   "never `make install` an unverified kernel" safety rule) — the
-  [amix-a4091 README](https://github.com/jusii/amix-a4091#build--run-emulation), build/install
+  [A4091 driver README](https://github.com/amigaux/amix/blob/master/kernel/drivers/a4091/README.md#build--run-emulation) (amix `kernel/drivers/a4091`, formerly amix-a4091), build/install
   steps 3–4 (clean-gate the build; the by-hand `c8d0s3` `dd` pipeline; never `make install` onto
   the working disk; a corrupt boot-partition write bricks that disk); the stock `/usr/sys` and
   `/stand` install flow on the [kernel-build page](../drivers/kernel-build.md#make-install-does-not-update-standunix-copy-it-yourself);
@@ -17846,10 +17849,10 @@ If you boot-test a rebuilt floppy, or pin the checksum, please contribute the re
   [`github.com/isoriano1968/hydra-amix`](https://github.com/isoriano1968/hydra-amix).
 - Install media (user-supplied): [amigaunix.com](https://www.amigaunix.com/doku.php/downloads) ·
   [archive.org](https://archive.org/details/commodore-amiga-operating-systems-amix).
-- amigaux 1.0 install media — the Installer-NG README (not public)
-  (the classic boot floppy frames the K030-U-FD install kernel; a Z3660 installs from its own
-  self-booting `.hdf` media) and the [amigaux.org Downloads](https://amigaux.org/downloads/) page
-  (classic kit tested in emulation only).
+- amigaux install media — amix [`media/README.md`](https://github.com/amigaux/amix/blob/master/media/README.md)
+  (the 1.1.x set and its test bench), read 2026-11-20 ✅; the 1.0 media (the classic boot floppy frames the
+  K030-U-FD install kernel; a Z3660 installs from its own self-booting `.hdf`) in amix
+  `media/docs/releases/1.0.md` and the [amigaux.org Downloads](https://amigaux.org/downloads/) page.
 
 
 ================================================================================

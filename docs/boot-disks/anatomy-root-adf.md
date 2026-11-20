@@ -92,7 +92,7 @@ The install driver is not an anonymous blob you have to carve out of the image �
 Two identity facts to pin while the image is open ✅ (first-party, 2026-07-31):
 
 - `/etc/rdb` on this floppy is **18,416 bytes, md5 `6cacf95f738abea7cfddc6bb9ebf28e7`**.
-- A rebuilt install miniroot (the Installer-NG media) carries a **byte-identical** copy of that binary — so `rdb` behaviour proven against the rebuilt media is the stock binary's behaviour, and vice versa. That identity is what transfers the bench-proven unit conventions on the filesystems page to the stock installer.
+- A rebuilt install miniroot (the amigaux install media, built by amix `media/`, formerly Installer-NG) carries a **byte-identical** copy of that binary — so `rdb` behaviour proven against the rebuilt media is the stock binary's behaviour, and vice versa. That identity is what transfers the bench-proven unit conventions on the filesystems page to the stock installer.
 
 ## The install / partition logic
 
@@ -273,4 +273,4 @@ Both require `binwalk`/`strings`; `inspect-adf.sh` additionally uses `xdftool` (
 - Master research brief, §9 (installation flow) and §10 (root.adf anatomy); §2 (SCSI ids — tape hard-coded at 4, disk 6 by convention; RAM ceiling); §13 gap #8 (RDB partition type IDs).
 - SHA-256 cross-check: `sources/CHECKSUMS.txt`.
 - Disk image (not redistributed here): [amigaunix.com](https://www.amigaunix.com/doku.php/home) / [archive.org Amiga UNIX](https://archive.org/details/commodore-amiga-operating-systems-amix).
-- The **Installer-NG** author-path proof (not public, 2026-07-31) ✅ — the stock root floppy's install script read by path (`/etc/profile`) with an s5 filesystem reader, matching the carved script text above; `/etc/rdb` md5 `6cacf95f738abea7cfddc6bb9ebf28e7` (18,416 B), byte-identical between the stock floppy and the rebuilt install miniroot.
+- The **Installer-NG** author-path proof (2026-07-31; Installer-NG is now amix `media/`, its rebuilt miniroot in `media/docs/miniroot.md`) ✅ — the stock root floppy's install script read by path (`/etc/profile`) with an s5 filesystem reader, matching the carved script text above; `/etc/rdb` md5 `6cacf95f738abea7cfddc6bb9ebf28e7` (18,416 B), byte-identical between the stock floppy and the rebuilt install miniroot.

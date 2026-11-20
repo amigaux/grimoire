@@ -198,6 +198,6 @@ see [Adding Drivers to a Custom Boot Disk](adding-drivers-to-boot-disk.md).
   (the `struct infoblock` / IBLK fields), `makeiblk.c` + `chksum.c` (the SVR4-`sum` checksum and how the
   IBLK is built), `boot1.c`/`boot2.c` (the runtime bootstrap consuming `ib_size`/`ib_fullsize`/`ib_chksum`/`ib_bind`
   and the overrun/checksum guards), and `decompress.c` (the LZW decoder + `rmask[]` table). These confirm
-  the black-box RE above. ✅ Proprietary Commodore material — referenced for interoperability, **not** redistributed.
+  the black-box RE above ✅. The same files are now public in amigaux/amix-system (first entry), under Amiga Corporation's 2026-09-23 approval.
 - Unix `compress`/`.Z` LZW format (magic `1f 9d`, flags byte = block-mode | maxbits).
 - ELF32 header fields for size recovery (`e_shoff`, `e_shnum`, `e_shentsize`).

@@ -112,6 +112,7 @@ Each item is one line: what it is, the ✅/🟡 confidence tag carried from the 
 | 97 | **A NULL read returns 0 in 193 stock binaries and faults in gcc14-built ones**: SVR4 `ld` gave those stock executables a read-only zero page at vaddr 0, while gcc14 binaries have none. Code that passes as one kind of binary can crash as the other. Before an unreleased fix, the 040/060 kernels returned chip-RAM bytes instead | ✅ | [Quirks §97](#97-zero-page-depends-on-linker), [040/060 status](68040-68060-status.md#k46-user-address-space) |
 | 98 | **A `vfork` child that calls `signal`, `sigset` or `sigaction` breaks the parent**: libc keeps the handlers in a table in its own data, which a vfork child shares, so the parent's next delivery of that signal jumps to 0 or 1 and dies with `SIGBUS`. `xinit` built with vfork never starts X. Use `fork`; in a vfork child call only `exec*` and `_exit` | ✅ | [Quirks §98](#98-vfork-child-signal-table) |
 | 99 | **A telnet command line over the 256-byte canonical limit runs nothing and wedges the login**: a 229-byte line answered and a 269-byte line did not, and nothing later in that login answered until a reconnect. Usually there is no echo or error, only silence. Check the length on the host and split long lines | ✅/🟡 | [Quirks §99](#99-canonical-line-wedge) |
+| 100 | **A whole-page UFS write that does not start an 8 KiB block leaves that block's first pages holding old memory in the page cache** — stock ufs `rwip` creates the pages at the window's base, not where the write starts; reads then return an earlier block, zeros or another file's data until the pages are evicted, while the disk is right. Fixed in the amigaux kernels (68030-261106-73 and 68060-261106-65 on) | ✅ | [Quirks §100](#100-ufs-rwip-pagecreate) |
 
 The rest of this page expands each item.
 
@@ -1562,6 +1563,38 @@ instead, from M. Or shrink only to an 8 KiB-aligned M and write the tail back, w
 aligned-cut workaround already does. (An M in its block's last page is clean only when the file is
 cached, so it is not a safe cut.)
 
+### 100. A whole-page UFS write that does not start an 8 KiB block leaves stale pages in the cache ✅ {#100-ufs-rwip-pagecreate}
+
+On a write, the stock ufs `rwip` maps the file's 8 KiB block into a segmap window and, for a write that
+covers whole pages, asks `segmap_pagecreate` to create the pages instead of reading them. It passes the
+**window's base**, while the copy that follows writes at base plus the offset into the block ✅
+(disassembly of the stock 2.1c `/unix`, sha256 `80a1204f…`, and of the relink kit's `fs/ufs/exp`). Every
+other caller of `segmap_pagecreate` in the kernel (`spec_write`, s5 `writei`, NFS `rwvp`, `fbzero`) adds
+the offset ✅.
+
+The effect, measured in emulation on the stock kernel and on both amigaux kernel lines with a byte-checked
+random-rewrite test ✅:
+
+- `as_iolock` grants page creation to any page-aligned whole-page write, rewrites included. With the wrong
+  address the created pages are the block's **first** ones, not the ones written: each that was not
+  already cached is taken from the free list, entered under the file and block, mapped without a read, and
+  never marked modified, so it keeps its frame's previous contents.
+- With 2 KiB or 4 KiB writes, once the file outgrows the page cache, reads return wrong data, every bad
+  block starting at offset 0 of its 8 KiB block. With 8 KiB writes, which always start the window, there
+  are none.
+- The wrong data is the frame's previous contents: an earlier block of the same file, zeros, or another
+  file's data, never an older version of the same block. **The disk holds the right data** at every bad
+  block; the wrong pages stay in the cache until evicted, so a re-read returns the same wrong data.
+
+**Fix.** One 4-byte change in `rwip`: the pushed address becomes `pea %a0@(0,%d3:l)` (base plus offset)
+in place of the saved base, at byte offset 0x8a4c of the stock `fs/ufs/exp` text ✅. With it the same test
+runs clean (68030: 100,000–200,000 operations at 16 and 64 MiB; 68060: 200,000 operations at 64 MiB; no
+wrong page), where the unchanged kernel fails in every run ✅. The amigaux 68030 kernel applies it from cut
+68030-261106-73 (amix `kernel/k30/tools/rwippc030.py`, which checks the stock bytes and refuses any other)
+and the 68040/68060 kernel from 68060-261106-65 ✅, so the 1.1.2 kernels carry it. On a stock kernel, write
+in 8 KiB pieces aligned to 8 KiB, or expect a re-read of freshly written data to be wrong until the cache
+lets go of it.
+
 ### 92. A failed STREAMS open can leave a freed queue on the run list: stock 2.1c panics in `queuerun` ✅ {#92-queuerun-panic}
 
 **The symptom.** `PANIC: KERNEL FAULT` with vector `0x4` (Illegal Instruction) or `0xB` (Line-F), the
@@ -2152,3 +2185,8 @@ platform not declared `SystemV` vfork (`HasVFork YES`), so an SVR4 cf file must 
   stock `/bin/sh` of the 2.1c userland on an emulated 68030, three one-boot runs, compared with dash on the
   host; amix `userland/base/test-lint.sh` (its rule against `: > file` in shipped scripts states the measured
   behaviour), commit `843a66b`.
+- **Quirk 100, ufs `rwip` and `segmap_pagecreate`** (first-party record, 2026-11-06) ✅: disassembly of the
+  stock 2.1c `/unix` (sha256 `80a1204f…`) and of amix-system `usr/sys/fs/ufs/exp`; the red/green random-rewrite
+  measurements on the stock kernel and both amigaux kernel lines; amix `kernel/k30/tools/rwippc030.py` and
+  `build-cross-kernel.sh` (`--ufs-rwip-fix`, commit `32f03e8`), `kernel/k30/CHANGELOG.md` (cut -73) and
+  `kernel/port/CHANGELOG.md` (cut -65).

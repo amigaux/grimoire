@@ -732,3 +732,9 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   written in between); `> f`, `echo > f` and the rest empty it every time ✅. `VAR=x func` does not pass `VAR` to a
   shell function, while a prefix on an external command works ✅. Probes on an emulated 68030, compared with dash;
   amix `userland/base/test-lint.sh` (`843a66b`). Folded into quirk 12.
+- **2026-11-06 — ufs `rwip` gives `segmap_pagecreate` the window base.** The stock 2.1c ufs `rwip` creates the
+  pages of a whole-page write at the segmap window's base instead of base plus the offset, so a write that does not
+  start an 8 KiB block leaves the block's first pages holding old memory in the page cache; the disk is right ✅
+  (disassembly of `/unix` `80a1204f…` and `fs/ufs/exp`; byte-checked random-rewrite test in emulation, stock and both
+  amigaux lines). A 4-byte fix (`pea %a0@(0,%d3:l)` at `fs/ufs/exp` .text 0x8a4c) runs clean; applied from cuts
+  68030-261106-73 and 68060-261106-65 ✅. Quirk 100.

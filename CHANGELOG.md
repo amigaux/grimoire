@@ -2,6 +2,10 @@
 
 Started 2026-09-26.
 
+## 2026-11-20 — currency sweep of every page (5892aec, 0441bec, 940a84e, 30562b4, 4614bf4, 5864143, 9f74af3, 80c4c96)
+
+Every page checked against amix and the amigaux forks: fixes described as unreleased now say which 1.1.x kernels carry them; loadable modules are shipped (kabi up to k30.1.5/k46.1.6, the full majors table, free range 57–67 and 69); moved repositories point at their amix directories, with rewritten commit hashes; Installer-NG is amix media/; the compilers are the pinned amigaux forks built in amix's container, with the gcc14 fold-mem-offsets and PR 126121 fixes; the X11R6.3 server is Xrtg for the Z3660, ZZ9000 and VA2000; the 1.1 package repository, its #ext blocks and published kernel-space rows; the stock kernel.c and Commodore boot sources are public in amix-system.
+
 ## 2026-11-20 — five findings: shell, UFS, libsocket, half-close, the kernel debugger (d5db299, bf24bbe, 584c095, 4bbe393, f8ca604, 73bba42)
 
 Quirk 12 gains two stock-shell traps (`: > file` empties only the first time it runs; `VAR=x func` passes nothing to a function); new quirks 100 (a whole-page UFS write not at an 8 KiB block start leaves stale pages in the cache; fixed in the amigaux kernels from 68030-261106-73 and 68060-261106-65), 101 (a non-blocking libsocket send drops what does not fit), 102 (one MSG_PEEK on a listener breaks accept) and 103 (POLLERR after a half-close); quirk 64 gains its cause and the 1.1 ftpdfix fix; networking gains a section on porting socket code to the stock libsocket; kernel architecture and kernel build document Commodore's remote kernel debugger, shipped in the relink kit and left out of the 2.1c kernel.

@@ -94,8 +94,9 @@ predates) ✅; the 040/060 port kernels can ✅. See the [kernel architecture](k
 The kernel configuration file (`master.d/kernel.c`), provided in **source**, that holds the device
 switch tables ([`cdevsw[]`/`bdevsw[]`](#cdevsw-bdevsw)), the interrupt tables (`int2_tbl[]`, a
 level-6 table), and the boot-time init table (`init_tbl[]`/`io_init[]`) ✅. Adding a driver means
-editing `kernel.c` to add the entries, then rebuilding ✅. The full original file is **not** publicly
-archived; its schema is inferred from the Ditto paper plus the modern repos 🔴. See the
+editing `kernel.c` to add the entries, then rebuilding ✅. The stock file is public in
+[`amigaux/amix-system`](https://github.com/amigaux/amix-system) as `usr/sys/master.d/kernel.c`, with
+`init_tbl[]`, `int2_tbl[]`, `io_init[]`, `bdevsw[]` and `cdevsw[]` ✅. See the
 [driver model](../drivers/driver-model.md) and [kernel build](../drivers/kernel-build.md).
 
 ## m68k-cbm-sysv4
@@ -149,9 +150,11 @@ the [kernel build process](../drivers/kernel-build.md).
 ## RTG
 
 **ReTargetable Graphics** — driving a third-party graphics card instead of the Amiga's built-in
-display. On Amix this is the [va2000](../drivers/case-studies/va2000.md) char framebuffer driver
-(`/dev/va2000`, char major 68) plus the [xrtg](../drivers/case-studies/xrtg.md) X11R5 server `Xrtg`
-✅. See [X11 RTG drivers](../drivers/x11-rtg-drivers.md) and
+display. On amigaux this is the X11R6.3 server `Xrtg` (package `x11r63`; also installed as `Xzz9000`
+and `X`), one server for the Z3660 RTG, the MNT ZZ9000 and the MNT VA2000, on the z3660rtg
+(`/dev/zz9000`, `/dev/zz9001`) and [va2000](../drivers/case-studies/va2000.md) (`/dev/va2000`, char
+major 68) kernel modules ✅. The first RTG X server on Amix was Antti Sokero's
+[xrtg](../drivers/case-studies/xrtg.md), an X11R5 `Xrtg` for the VA2000 ✅. See [X11 RTG drivers](../drivers/x11-rtg-drivers.md) and
 [X11 and the desktop](x11-and-desktop.md).
 
 ## s5
@@ -226,6 +229,8 @@ addresses are assigned by [AUTOCONFIG](#autoconfig) at reset ✅. See [hardware]
 - Michael Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference — driver model, `cdevsw`/`bdevsw`, majors/minors, `spl`/clist, `rdbunix` (the Ditto paper)
 - `amix_21_root.adf` analysis via `tools/inspect-adf.sh` — miniroot (s5; corrected 2026-07-05), `viper_kludge`, install/partition logic, `relocunix`/`make bootpart`
 - `amix_21_boot.adf` analysis via `tools/inspect-adf.sh` — compressed kernel, HAT panic string
-- The native-chipset display path (Amix entry): research brief §21 (the screen manager's `DisplayScreen()`/`NewBitmap` chip-RAM bitmap on the native display) and [`jusii/amix-z3660rtg`](https://github.com/jusii/amix-z3660rtg) `docs/X-INSTALL-RTG.md` (the console login on the chipset screen; the stock `startx` on the native chipset); the stock `cdevsw[]` row 10 `screen` on the [major-number registry](../reference/major-number-registry.md)
+- The native-chipset display path (Amix entry): research brief §21 (the screen manager's `DisplayScreen()`/`NewBitmap` chip-RAM bitmap on the native display) and [`amigaux/amix-z3660rtg`](https://github.com/amigaux/amix-z3660rtg) `docs/X-INSTALL-RTG.md` (the console login on the chipset screen; the stock `startx` on the native chipset); the stock `cdevsw[]` row 10 `screen` on the [major-number registry](../reference/major-number-registry.md)
+- The stock `kernel.c`: [`amigaux/amix-system`](https://github.com/amigaux/amix-system) `usr/sys/master.d/kernel.c` at `988b0f8`, the commit amix pins (read 2026-11-20).
+- The amigaux RTG stack: [`amigaux/amix`](https://github.com/amigaux/amix) `userland/packages/x11r6.3/README.md`, `kernel/drivers/va2000/README.md`, `kernel/drivers/z3660rtg/README.md` and `docs/WHATS-NEW.md` section 1.1.2 (read 2026-11-20).
 - Driver repos: [asokero/va2000-amix](https://github.com/asokero/va2000-amix), [asokero/xrtg-amix](https://github.com/asokero/xrtg-amix), [asokero/lszorro-amix](https://github.com/asokero/lszorro-amix), [isoriano1968/hydra-amix](https://github.com/isoriano1968/hydra-amix) — `autocon()`, RTG/`/dev/va2000`, DLPI/STREAMS, `elf2brel`, `m68k-cbm-sysv4`
 - [amigaunix.com](https://www.amigaunix.com/doku.php/home) — community-reported (🟡) details: `s5`-vs-UFS default rationale, `amixpkg` flakiness, AmixBP

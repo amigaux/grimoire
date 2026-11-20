@@ -141,7 +141,7 @@ So `BOOTLEN = BOOTSIZE * 2048 = 4096` blocks of 512 bytes = 2 MB ✅. This is th
 
 ## From kernel source to a bootable partition
 
-Stock Amix is a **monolithic SVR4 kernel with no loadable modules** ([one third-party exception](kernel-architecture.md#loadable-modules)) — drivers are statically linked in — so installing a new kernel (or a kernel with an added driver) means relinking `/unix` and rewriting the boot partition ✅. The flow, from the [Ditto driver paper](../reference/bibliography.md) and the modern driver repos:
+Stock Amix is a **monolithic SVR4 kernel with no loadable modules** ([one third-party exception](kernel-architecture.md#loadable-modules)) — drivers are statically linked in — so installing a new kernel (or a kernel with an added driver) means relinking `/unix` and rewriting the boot partition ✅. That holds for stock Amix and amigaux 1.0. The amigaux 1.1 and later kernels load modules, and `kbootset` writes the kernel and the root disk's modules to the boot slice as a *generation* instead ✅ (see [loadable kernel modules](../drivers/loadable-modules.md)). The flow, from the [Ditto driver paper](../reference/bibliography.md) and the modern driver repos:
 
 ```sh
 # 1. Build the kernel in the kernel source tree.
@@ -193,9 +193,10 @@ Scope nuance: the hard-disk bootpart frames the **raw ET_REL kernel** (`makeiblk
 `elf2brel`) — the brel/`e_type 0xff00` conversion is the **boot-floppy** path only. A raw
 cross-linked ET_REL does not inherently D245 on the hard-disk path; under a name-based boot2 it
 always does ✅. Because `core-2.1.pkg` ships the name-based loader inside the stock file set,
-any freshly installed system inherits this trap — the modern build pipeline laminates the
-flags-based boot2 into `/stand/boot2.boot` and gates the whole chain with `bootchain-verify.py`
-(see [kernel build and install](../drivers/kernel-build.md)) ✅.
+any freshly installed system inherits this trap — the amigaux 1.0 build pipeline laminated the
+flags-based boot2 into `/stand/boot2.boot` and gated the whole chain with `bootchain-verify.py`
+(see [kernel build and install](../drivers/kernel-build.md)) ✅. amigaux 1.1 and later boot with
+the project's own boot1 and boot2 instead, and their install lays none of these pieces ✅.
 
 ### Reframing the boot partition on a live system (upgrading the kernel) ✅
 
@@ -210,6 +211,9 @@ The machine boots the kernel out of the raw **`UNI\0`** boot slice, **never `/st
 - `makeiblk` must be invoked as **`./makeiblk`** (it is not on `PATH`), and the stock `/stand/makeiblk` is byte-for-byte conformant with the boot-chain contract — no re-implementation needed. The bootpart consumes an **ELF ET_REL kernel uncompressed** (`ib_fullsize=0`); `elf2brel`/compression is the floppy path only.
 - The **flags-based `boot2.boot` has a fixed `sum -r` fingerprint of `14193`** — verify it before writing, because the name-based loader D245s (previous section).
 - After the `dd`, `sync` and read the slice back to confirm the write landed.
+
+This applies to stock and amigaux 1.0 systems. On 1.1 and later there is no `/stand/boot2.boot`,
+framed chain or reframe tool: `kbootset` writes the boot slice and rolls it back ✅.
 
 **Telling which kernel is actually running** (there is no `uname` field for it): the SVR4 banner reads **`2.1c`** for a cdfs-carrying kernel vs `2.1` for one without, and `mount -F cdfs` returns **errno 22** (the `GETFSIND` lookup fails) when cdfs is **not** in the kernel — reliable in that direction ✅.
 
@@ -437,17 +441,18 @@ For the full byte offsets, the equivalent root/patch-disk findings, and how to r
   bytes after the device name.
 - The **2026-09-29 stock-kernel RAM-layout measurement** ✅ — on the emulated bench the same 64 MB A3000 motherboard bank boots a kernel that probes for the A3000 SCSI and stops the pinned stock kernel at `s5mountroot VOP_OPEN error 6` (no card 0), symbolised against the stock `autocon()` load-address guess (first-party record, 2026-09-29; [quirks §57](quirks.md#57-loader-placement-a3000-scsi)).
 - The **two boot2 lineages** (first-party record, 2026-07-15/16): single-variable boot2 splice, loader forensics (sha `5ab360b1…` vs `f287ff3a…`), bench + 5/5 metal validation 2026-07-15.
-- The **1.0 (r6) root selection** ✅ — Installer-NG (not public) `docs/release-notes-amigaux-1.0.md` ("One kernel per driver family; any target disk at install", "Installing from CD, and onto a disk behind the A4092": the boot-disk hint, the `RTH1` console line, the built-in fallback, the root record, `/sbin/bcheckrc`); the metal roots `c3d0s1`, moved-disk `c2d0s1` and A4092 `c9d0s1` on one A4000 + Z3660 (first-party record, 2026-10-11) 🟡.
+- The **1.0 (r6) root selection** ✅ — [`amigaux/amix`](https://github.com/amigaux/amix) `media/docs/release-notes-amigaux-1.0.md` ("One kernel per driver family; any target disk at install", "Installing from CD, and onto a disk behind the A4092": the boot-disk hint, the `RTH1` console line, the built-in fallback, the root record, `/sbin/bcheckrc`); the metal roots `c3d0s1`, moved-disk `c2d0s1` and A4092 `c9d0s1` on one A4000 + Z3660 (first-party record, 2026-10-11) 🟡.
 - Research brief §3 (Boot process & disk layout) and §10 (boot.adf anatomy), `sources/research-brief.md`.
 - `amix_21_boot.adf` analysis via [`tools/inspect-adf.sh`](../boot-disks/anatomy-boot-adf.md): `DOS\0` OFS bootblock, failed `xdftool list` (`Invalid Root Block @880`), kernel decompression/checksum strings, NFS/RPC string table, `hat_vtokp_prot` HAT panic string, no clean ELF.
 - `amix_21_root.adf` install scripts (via `tools/inspect-adf.sh`): `BOOTSIZE=2`, `BOOTLEN=BOOTSIZE*2048`, `BREAKPT=120`, `BPART=/dev/dsk/c${SCSI}d0s${BOOTPART}`. The root-filesystem prompt is `[s5]` and empty input selects s5; `ANS="ufs"` appears only as a case branch reached when the user types `ufs` (corrected 2026-07-19 — previously recorded here as the default).
 - Michael Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference (the `rdbunix` kernel image name; statically linked monolithic kernel; `make` in `/usr/sys`).
 - Modern driver repos for the `relocunix` / `make bootpart KERNEL=relocunix` flow: <https://github.com/asokero/va2000-amix>, <https://github.com/isoriano1968/hydra-amix>.
 - amigaunix.com (Superkickstart dual-boot via right mouse button, hardware requirements): <https://www.amigaunix.com/>.
-- The A4091-on-Amix project, [amix-a4091](https://github.com/jusii/amix-a4091) — its `README.md` (root on the A4091; the phantom-A3000 that stole card 0, reproduced locally ✅) and `src/`/`tools/`.
+- The A4091-on-Amix project, [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/drivers/a4091/` — its `README.md` (root on the A4091; the phantom-A3000 that stole card 0, reproduced locally ✅) and `src/`/`tools/`.
 - `amiga/config/unix.c` (`rootdev = ROOTDEV`, `-DROOTDEV`) and `amiga/config/c6s1unix.c` (`C6D0S1 = makedevice(18,22)`, swap `c6d0s2`); `amiga/alien/sd.h` (`SDCARDS`, `sdunit`/`sdcard`/`sdpart` macros).
-- amix-a4091 `src/kernel-patches/support.c.patch` — the `autocon()` phantom-A3000 heuristic replaced by the chipset-gated WD33C93 probe; `driver.conf` — the `0x02020054  a4091queue` row, from which the build harness generates the `sd.c` registry entry; `src/a4091-wr.c` — the 53C710 READ+WRITE driver.
+- `kernel/drivers/a4091/src/kernel-patches/support.c.patch` — the `autocon()` phantom-A3000 heuristic replaced by the chipset-gated WD33C93 probe; `kernel/drivers/a4091/driver.conf` — the `0x02020054  a4091queue` row, from which the build harness generates the `sd.c` registry entry; `kernel/drivers/a4091/src/a4091-wr.c` — the 53C710 READ+WRITE driver.
 - a4091.device open-source project: <https://github.com/A4091/a4091-software> (A4091 autoboot ROM + SCRIPTS assembler).
 - The **RAM-ceiling measurements** (first-party record, 2026-08-12/14) ✅ — root-filesystem selection is by probe, not by configuration: the Amiga port ships `rootfstype` **empty** (AT&T generic says `s5`), `vfs_mountroot` walks `vfssw[]`, `s5mountroot` returns `EINVAL` politely so the walk continues, and `ufs` sits at `vfssw[2]` in every kernel including the install kernels. Same source for the `cdfs` errno de-laundering that makes the old `errno 5` probe stale; the 🟡 no-media `errno 25` value is a single live probe (first-party record, 2026-08-14/15), carried unchanged. Cross-checked against the `vfs_mountroot` disassembly recorded on [building a kernel](../drivers/kernel-build.md).
 - The **Installer-NG** install work (first-party record, 2026-07-22/24; not public) — a blank-disk→bootable-install effort that root-caused these platform behaviours on the Amiberry bench and the real A4000+Z3660 (acceptance-run captures, s5/UFS state reads, and the on-metal digest attestation) ✅ (🟡 where tagged).
+- The 1.1 boot chain and generations: [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/README.md` (kbootset), `kernel/dlm/docs/spec/10-boot-loader.md` §1 (the 1.0 stock chain against the 1.1 loader) and `media/docs/l11-disk.md` (the 1.1 install lays none of the 1.0 boot-chain pieces), read 2026-11-20 ✅.
 - The bootblock-strap measurement and the loader's failure path: [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/docs/measurements/2026-10-26-m-ld1-m-ld3.md` (96 emulated cells, Kickstart 3.1 and 3.2.x) ✅; the CD-boot node facts: `kernel/dlm/docs/spec/10-boot-loader.md` §4.4, read from the A4091 ROM's mounter source (`3rdparty/mounter/mounter.c` in the a4091-software tree) ✅; the trackdisk cache, the chip-RAM timings, the 31 s LZW reference, the AGA display state and the AN_BootError loop: `kernel/dlm/CHANGELOG.md` 2026-10-25 entries and the kernel-module campaign (first-party record, 2026-10-25) ✅.

@@ -62,7 +62,9 @@ fell through.
 - ✅ **Not** loadable-module based (stock Amix;
   [one third-party exception](kernel-architecture.md#loadable-modules)). Drivers are statically
   linked into the kernel; adding one means editing `kernel.c` and relinking `/unix`. See the
-  [driver model](../drivers/driver-model.md).
+  [driver model](../drivers/driver-model.md). The amigaux 1.1 and later kernels do load drivers and
+  filesystems as modules, at boot or on demand ✅ — see
+  [loadable kernel modules](../drivers/loadable-modules.md).
 - ✅ **Not** runnable on every Amiga. The **stock** kernel needs a 68020/68030 **with a real MMU** and
   a hardware FPU, its stock drivers are **Zorro II only**, and it does **not** run on the
   68040/68060 (so the A4000 cannot officially run stock Amix) — the public
@@ -139,8 +141,9 @@ The releases, with confidence tags carried straight from the research brief:
 - Research brief §1 (identity, lineage, history; version matrix) — `sources/research-brief.md`.
 - Research brief §2 (the stock 68020/030 limit) and the [040/060 status page](68040-68060-status.md).
 - The A4000T metal run: Amix 2.1c reaches `login:` about 60 s after power-on on a **real 68LC060** (the FPU-less 68060) on a Z3660 in an A4000T, running 060-direct (the card's CPU boot mode, not its 68030 emulation) with 128 MB of card RAM — first-party record, 2026-09-25 ✅.
-- The native-chipset display and audio facts: research brief §21 (the screen manager's `DisplayScreen()`/`NewBitmap` chip-RAM bitmap on the native display) ✅; [`jusii/amix-z3660rtg`](https://github.com/jusii/amix-z3660rtg) `docs/X-INSTALL-RTG.md` (the console login on the chipset screen; the stock `startx` on the native chipset) ✅; the stock `cdevsw[]` rows 10 `screen` and 46 `audio` on the [major-number registry](../reference/major-number-registry.md) ✅.
+- The native-chipset display and audio facts: research brief §21 (the screen manager's `DisplayScreen()`/`NewBitmap` chip-RAM bitmap on the native display) ✅; [`amigaux/amix-z3660rtg`](https://github.com/amigaux/amix-z3660rtg) `docs/X-INSTALL-RTG.md` (the console login on the chipset screen; the stock `startx` on the native chipset) ✅; the stock `cdevsw[]` rows 10 `screen` and 46 `audio` on the [major-number registry](../reference/major-number-registry.md) ✅.
 - The "quick and dirty" characterisation: research brief §1, untagged there and sourced to an EAB thread and datagubbe.se (community, 🟡).
+- The amigaux 1.1 module kernels: [`amigaux/amix`](https://github.com/amigaux/amix) `docs/WHATS-NEW.md`, section 1.1 (read 2026-11-20) ✅.
 - The stock-only scope of the loadable-module, FPU and Zorro II limits: the kernel architecture page's "Loadable modules" section (linked above), the [040/060 status page](68040-68060-status.md#the-fpu-less-68060-lane-software-floating-point-on-real-silicon) (the 68LC060 software FPU) and [the Zorro III correction](../drivers/zorro-autoconfig.md#zorro-iii-boards-and-the-real-zorro-ii-only-wall).
 - Michael Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference
   (opening line on direct-port lineage) — see [bibliography](../reference/bibliography.md).

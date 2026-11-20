@@ -36,8 +36,8 @@ exactly this **2.1p2a / kernel 2.1c** combination.
 
 The community distribution at [amigaux.org](https://amigaux.org) numbers its own releases, and they
 reuse digits from the matrix above: **amigaux 1.0** (2026-10-14) ships **Commodore Amix 2.1**, on a
-68030 kit and on the 68040/68060 line, and **amigaux 1.1** — in development, the release that brings
-[loadable kernel modules](../drivers/loadable-modules.md) — has nothing to do with **Commodore Amix
+68030 kit and on the 68040/68060 line, and **amigaux 1.1** (with the point releases 1.1.1 and 1.1.2), the release that brought
+[loadable kernel modules](../drivers/loadable-modules.md), has nothing to do with **Commodore Amix
 1.1** (1991, the first SVR4 release) ✅. Within amigaux, the two kernel lines are named **k30**
 (68030) and **k46** (68040/68060) ✅. Say "amigaux 1.1" or "Amix 1.1 (1991)", never a bare "1.1".
 
@@ -183,4 +183,4 @@ you are realistically going to meet today.
 - The disputed "2.1c, 1994" listing originates from the Gunkies wiki; the "2.2" string has no primary
   source (brief §1, §13).
 - The stock kernel hashes (sha256 of the files, 2026-10-29; the project's system-files inventory, first-party record) ✅; [`amigaux/amix`](https://github.com/amigaux/amix) `system/README.md` and `system/MANIFEST.sha256` ✅.
-- amigaux release facts: [amigaux.org](https://amigaux.org) (1.0, 2026-10-14) ✅; [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/README.md` (modules for release 1.1, the k30/k46 lines) ✅.
+- amigaux release facts: [amigaux.org](https://amigaux.org) (1.0, 2026-10-14) ✅; [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/README.md` (modules for release 1.1, the k30/k46 lines) ✅; `docs/WHATS-NEW.md` sections 1.1, 1.1.1 and 1.1.2 (read 2026-11-20) ✅.

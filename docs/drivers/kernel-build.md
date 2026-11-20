@@ -434,8 +434,8 @@ measured on the emulated A3000; on a real A3000 the patch is a safe over-approxi
 reach refutation below). This is not an A4091 requirement
 and not a cdfs requirement: `a3091.c` is the **A3000
 onboard** SCSI driver (super-DMAC + WD33C93 at `0xDD0000`), it is in the stock `amiga/alien` Makefile,
-and it links into **every** kernel. It lives under `amix-a4091/src/kernel-patches/` only because that
-project did the work ✅.
+and it links into **every** kernel. It lives under amix `kernel/drivers/a4091/src/kernel-patches/` (formerly amix-a4091) only because
+that project did the work ✅.
 
 On the emulated A3000, `/etc/ddsize` on a disk behind this driver hung for good, after `a3091: 0x1 0 0x0` ✅ ([`ddsize` can hang](../how-it-works/filesystems-and-disks.md#ddsize-can-hang)).
 
@@ -565,7 +565,7 @@ shipped fix, as a safe over-approximation.
 
 ### The separate GSIO `scsi.c.patch` — userspace only ✅
 
-`amix-a4091`'s **`scsi.c.patch`** is a different thing and is **not** a boot requirement: it enlarges
+The A4091 project's **`scsi.c.patch`** is a different thing and is **not** a boot requirement: it enlarges
 the userspace `/dev/scsi` **GSIO** bounce iobuf to **64 KB** ✅. The GSIO path bounces every transfer
 through that iobuf, which is why userspace `/dev/scsi` reads can be multi-sector even though the
 *in-kernel* SCSI path cannot (see the DMA gotcha below). The in-kernel `cdfs` read path goes through
@@ -784,8 +784,8 @@ is switched on in the configuration, not by changing kernel code ✅:
   (symtab **and** relocation records).
 - a4091.device open-source project: <https://github.com/A4091/a4091-software> (A4091 ROM + SCRIPTS
   assembler), referenced by the A4091-on-Amix work.
-- amix-a4091 kernel patches `src/kernel-patches/scsi.c.patch` (userspace `/dev/scsi` GSIO bounce iobuf
-  → 64 KB) and `src/kernel-patches/a3091.c.patch` (commit `e70c1d7`) — the A3000 super-DMAC
+- The A4091 kernel patches, now [`amigaux/amix`](https://github.com/amigaux/amix/tree/master/kernel/drivers/a4091/src/kernel-patches) `kernel/drivers/a4091/src/kernel-patches/` (formerly amix-a4091; paths read 2026-11-20): `scsi.c.patch` (userspace `/dev/scsi` GSIO bounce iobuf
+  → 64 KB) and `a3091.c.patch` (commit `6b647e0`, formerly `e70c1d7`) — the A3000 super-DMAC
   chip-mem DMA bounce for buffers ≥ `0x1000000` (the threshold is `a2091`'s, not a measured `a3091`
   reach limit — see the refutation above), ported from the `a2091.c` sibling;
   evidence = source + Amiberry-savestate differential (amix-a4091 CD-ROM-effort handoff, 2026-07-10),

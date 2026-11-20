@@ -1,35 +1,37 @@
 ---
-title: Loadable Kernel Modules (amigaux 1.1, in development)
-summary: The loadable-module system the amigaux project is building for its 1.1 release — own boot loader, module core, kbootset generations, the ABI kit and kabi rule, module classes, the static floor, the kernel facts a module author needs (interrupt levels, kmem budget, board windows, DMA), and what is proven where as of 2026-10-29.
+title: Loadable Kernel Modules (amigaux 1.1 and later)
+summary: The loadable-module system amigaux ships from its 1.1 release — own boot loader, module core, kbootset generations, the ABI kit and kabi rule, module classes, the static floor, the kernel facts a module author needs (interrupt levels, kmem budget, board windows, DMA), the current kabi minors and majors, and what is proven where.
 status: draft
 ---
 
-# Loadable Kernel Modules (amigaux 1.1, in development)
+# Loadable Kernel Modules (amigaux 1.1 and later)
 
 **Stock Amix 2.1 and every kernel of the amigaux 1.0 release are monolithic: nothing loads into a
 running kernel** ✅ ([kernel architecture](../how-it-works/kernel-architecture.md#loadable-modules)).
-The amigaux project is building a loadable-module system for its **1.1** release, on both CPU lines
-and on every install medium. Its code is public in the [`amigaux/amix`](https://github.com/amigaux/amix)
-monorepo, under `kernel/dlm` (the loader, the module core, the composer and the ABI kit) and
-`kernel/modules` (generic modules) ✅. As of **2026-10-29** it runs end to end in emulation on both
-lines and on real 68060 hardware, and **nothing of it is released**: no module, module kernel or
-loader is in the public package catalog ✅. Interfaces are versioned (below) but can still change
-before 1.1.
+amigaux **1.1** introduced a loadable-module system on both CPU lines and on every install medium:
+modules load at boot or on demand, and filesystems are modules loaded when one of their type is
+mounted ✅. 1.1.1 added module packages on the 1.1 kernels, and 1.1.2 brought new module kernels (`kern30m`
+k30.1.5.261115-78, `kern46m` k46.1.6.261115-67) with `kbootset` 1.1.0.261115-46; module packages
+such as `cdfs`, `random`, `buddha`, `xsurf`, `va2000` and `z3660rtg` are in the 1.1 repository,
+`http://pkg.amigaux.org/1.1` ✅. The code is public in the [`amigaux/amix`](https://github.com/amigaux/amix)
+monorepo, under `kernel/dlm` (the loader, the module core, the composer and the ABI kit),
+`kernel/modules` (generic modules) and `kernel/drivers` (each driver built as a module) ✅. Interfaces
+are versioned by kabi (below).
 
-If you are writing a driver for a released Amix today, use the static model:
-[the driver model](driver-model.md) and [building the kernel](kernel-build.md). This page is for
-anyone who wants to build a module against the kit, or who needs the kernel facts the module work
-established (they hold for static drivers too).
+For amigaux 1.1 and later, write a module against the ABI kit (below): on 1.1 the drivers come
+from modules, and there is no `/etc/master.d` ✅. For stock Amix 2.1 or amigaux 1.0, use the static
+model: [the driver model](driver-model.md) and [building the kernel](kernel-build.md). The kernel
+facts the module work established (below) hold for static drivers too.
 
-## Status on 2026-10-29
+## Status
 
 | What | Where it stands | Tag |
 |---|---|---|
-| Code | `kernel/dlm`: `loader/` (boot1, boot2), `core/` (a patch queue over the upstream core), `kbootset/`, `modtools/`, `abi/` (the kit sources), host tests; `kernel/modules`: `monsw`, `ramdisk` | ✅ |
-| Emulation (Amiberry), both lines | module boots and root-on-a-module boots, the CD boot, the floppy pair, the network-install medium, the RAM-disk installer, upgrade and rollback | ✅ first-party record |
-| Real hardware, 68060 line | A4000 + Z3660 (68LC060 and full 68060): network modules polled and interrupt-driven, RTG with the monitor switch, root on the Z3660's SCSI, on an A4092, on Gayle IDE; the A4000T's onboard 53C710 as a root controller | ✅ first-party record |
+| Code | `kernel/dlm`: `loader/` (boot1, boot2), `core/` (a patch queue over the upstream core), `kbootset/`, `modtools/`, `abi/` (the kit sources), host tests; `kernel/modules`: `monsw`, `ramdisk`, `random`, `zz9kbus`, `zz9ksvc`; the hardware drivers' modules under `kernel/drivers` | ✅ |
+| Emulation (Amiberry), both lines (2026-10-29) | module boots and root-on-a-module boots, the CD boot, the floppy pair, the network-install medium, the RAM-disk installer, upgrade and rollback | ✅ first-party record |
+| Real hardware, 68060 line (2026-10-29) | A4000 + Z3660 (68LC060 and full 68060): network modules polled and interrupt-driven, RTG with the monitor switch, root on the Z3660's SCSI, on an A4092, on Gayle IDE; the A4000T's onboard 53C710 as a root controller | ✅ first-party record |
 | Real hardware, 68030 line | no real 68030 Amiga tested yet; the only "030" metal rows are a Z3660 in its 68030-emulation mode | 🔴 open |
-| Release | 1.1 only; the package catalog at `pkg.amigaux.org` has no kernel-space entries | ✅ |
+| Release | shipped in 1.1 (2026-11), with 1.1.1 and 1.1.2 after it; module packages are in the 1.1 repository (`#kpkg` catalog lines) | ✅ |
 
 ## The parts
 
@@ -56,6 +58,11 @@ Each kernel carries a **kabi** tag, `k30.1.N` / `k46.1.N` ✅:
 | 1.1 | `sd_register` on both lines, `root_defer` on k46 |
 | 1.2 | `iodone`, `ramdisk_image`, `vfs_register`, `root_defer` on k30, the DMA calls, the filesystem helpers |
 | 1.3 | what the Paula audio module needs (`AllocMem`, `FreeMem`, `displaytype`, `paula_busy`, `audio_nopen`); only a kernel whose cut patches the stock audio driver exports it |
+| 1.4 | no name: the core loads a demand-class filesystem module at the first mount of its type, so such a module carries 1.4 whatever it imports |
+| 1.5 | no name: the core takes a `zorro` match key with product 00 (the Buddha's `zorro:1212:00`), so a module with one carries 1.5 |
+| 1.6 (k46 only) | `fb_register`, a framebuffer window's cache class; k30 stays at 1.5. Through the weak `DDI_FB_REGISTER` a module keeps its minor and loads on older kernels too |
+
+The current kits are **k30.1.5** and **k46.1.6** ✅ (`kit.conf` of each).
 
 A module's tag is the highest minor among the names it imports, never below the kit's `KABI_MIN`
 (1.2 at present), and it loads on a kernel of that minor or later ✅. The kit's `abi.txt` fingerprint
@@ -224,24 +231,39 @@ fails with `ENOMEM`, whatever the size: the first-use rule of the driver-to-modu
 
 ## Majors in the module registry
 
-The kit's `registry/majors` is the 1.1 allocation; the core refuses a module whose majors are not
-registered to it ✅. It agrees with the [major-number registry](../reference/major-number-registry.md):
+The kit's `registry/majors` is the 1.1 allocation, extended since; the core refuses a module whose
+majors are not registered to it ✅. It agrees with the [major-number registry](../reference/major-number-registry.md):
 
 | Major | Module |
 |---|---|
-| c 49 | `z3660rtg` (the Z3660 RTG target of the zz9000 driver) |
+| c 48 | `random` (`/dev/random` 0, `/dev/urandom` 1; from 2026-10-31) |
+| c 49 | `z3660rtg` (the zz9000 driver for the Z3660 RTG and the MNT ZZ9000) |
 | c 51 | `z3660eth` |
 | c 52 | `monsw`, the monitor switch |
 | c 53 | `kinfo` (static floor) |
 | c 54 | `paula` (the static Paula driver's 53 is `kinfo`'s in 1.1) |
+| c 55 | `zz9ksvc`, the ZZ9000/Z3660 service channel (from 2026-11-01) |
+| c 56 | `xsurf`, the X-Surf and X-Surf-100 ethernet (from 2026-11-14) |
+| c 68 | `va2000`, the MNT VA2000 graphics card, the major its static driver has always used (from 2026-11-15) |
 | b 20 | `ramdisk` (replaces the stock `ram` driver's row) |
 
-## The two example modules
+The same table is on both kernel lines and on both the `master` and `next` branches of amix (read
+2026-11-20) ✅.
+
+## Example modules
 
 | Module | Class | What it shows |
 |---|---|---|
 | [`monsw`](https://github.com/amigaux/amix/tree/master/kernel/modules/monsw) | demand, `c:52` | A card-independent monitor switch (CIA-B PRA bits 4 and 2) with a kernel API for RTG drivers (`monsw_register`, `monsw_set`, `monsw_lastclose`) and `/dev/monsw` ioctls. The same source still builds the static object the 040/060 port links ✅ |
 | [`ramdisk`](https://github.com/amigaux/amix/tree/master/kernel/modules/ramdisk) | root, `b:20` | Unit 0 is the miniroot image boot2 placed at the top of the largest fast-memory region (below `VSECT1`, so reached by identity with nothing mapped); units 1 and 2 are scratch disks allocated in ≤ 256 KiB `KM_NOSLEEP` pieces at first open ✅ |
+
+The other generic modules: [`random`](https://github.com/amigaux/amix/tree/master/kernel/modules/random)
+(demand, `c:48`: `/dev/random` and `/dev/urandom`, ChaCha20 with the seed kept across reboots),
+[`zz9kbus`](https://github.com/amigaux/amix/tree/master/kernel/modules/zz9kbus) (boot: the registry
+between ZZ9000-family board drivers and `zz9ksvc`) and
+[`zz9ksvc`](https://github.com/amigaux/amix/tree/master/kernel/modules/zz9ksvc) (demand, `c:55`: the
+service channel of the board's second ARM core, GPL-3.0-or-later). `zz9ksvc` shows one module calling
+another through a published interface header, `sys/zz9kbus.h` ✅ (`kernel/modules/README.md`).
 
 The stock Amix 2.1 RAM disk (`ram`, block major 20, three kmem-backed units of 128 KiB, 512 KiB and
 2 MiB) cannot present an image loaded before the kernel started, which is why the module kernels drop
@@ -253,7 +275,7 @@ it for `ramdisk` ✅ (`kernel/modules/ramdisk/README.md`).
 - [The RAM ceiling](../how-it-works/ram-ceiling.md) — the fixed 4 MiB kernel arena behind the kmem budget.
 - [Toolchain](toolchain.md) — gcc-cross-amix for kernel space, gcc14-cross-amix for userland.
 - [Major-number registry](../reference/major-number-registry.md).
-- [Composing multi-driver kernels](kernel-composition.md) — the static-kernel answer the module system replaces in 1.1.
+- [Composing multi-driver kernels](kernel-composition.md) — the static-kernel answer the module system replaced in 1.1.
 
 ## Sources
 
@@ -279,4 +301,11 @@ it for `ramdisk` ✅ (`kernel/modules/ramdisk/README.md`).
   use", `53624e5`, on `master`); `kernel/dlm/docs/contracts/C3-6-driver-to-module.md` §1.1; `HZ` from
   the stock `usr/include/sys/param.h` in [`amigaux/amix-system`](https://github.com/amigaux/amix-system/blob/7cba961/usr/include/sys/param.h).
 - The public package catalog, `http://pkg.amigaux.org/catalog`, read 2026-10-29: catalog format 1,
-  41 rows, no kernel-space block ✅.
+  41 rows, no kernel-space block ✅ (before 1.1).
+- [`amigaux/amix`](https://github.com/amigaux/amix) `master`, read 2026-11-20 ✅: `docs/WHATS-NEW.md`
+  (1.1, 1.1.1, 1.1.2: the module kernels, `kbootset`, the module packages);
+  `media/docs/releases/1.1.md` (drivers from modules, no `/etc/master.d`); `kernel/dlm/abi/README.md`
+  (minors 1.4–1.6); `kernel/dlm/build/kit/k30/kit.conf` and `k46/kit.conf` (`KABI=k30.1.5`,
+  `k46.1.6`, `KABI_MIN` 1.2); `kernel/dlm/abi/registry/majors` (also on `next`);
+  `kernel/modules/README.md` (the five modules); `kernel/drivers/README.md`;
+  `userland/pkgtools/src/apkg/apkg.h` (`#kpkg` lines).

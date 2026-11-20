@@ -175,16 +175,20 @@ it are runtime addresses, so no load-bias arithmetic is needed ✅:
 echo "freemem/D\navailrmem/D\nphysmem/D" | adb -k /stand/unix /dev/kmem
 ```
 
-Measured on the 1.1 68030 module kernel (emulated A4000 + Z3660 in 68030 mode, 32 MB fast RAM),
+Measured on a pre-release 1.1 68030 module kernel (emulated A4000 + Z3660 in 68030 mode, 32 MB fast RAM),
 the values are live and consistent ✅: `physmem` 16383 (2 KiB pages); `freemem` 11854 and 11851
 idle, 11746 with six extra processes running, 11832 after they exited; `availrmem` 14229, 14211,
 14213.
 
-The other namelist readers do not follow ✅. On the same box `sar -r 1 1` fails with
-`sadc cannot copy inode table: No such device or address`, and `/etc/crash` with
+On that pre-release kernel (2026-10-31) the other namelist readers did not follow ✅: `sar -r 1 1`
+failed with `sadc cannot copy inode table: No such device or address`, and `/etc/crash` with
 `could not read namelist timestamp`. On the 2.1c bench image's kernel (booted kernel not
 `/stand/unix`, no symbol table) `crash` fails with `process slot out of bounds` and `sadc` with
-`Not enough space`. For live kernel variables on 1.1, use `adb`.
+`Not enough space`. **On the released 1.1**, `sar`, `sadc` and `timex -s` work with the filesystems
+loaded as modules, and `crash` starts on the 68030 line ✅. On the 68040/68060 kernel `crash` does not
+work: it checks every address against 68030 page tables that kernel does not keep. On the 68030
+kernel, `crash`'s `od` of a virtual address ends in a segmentation fault; use `od -p`, the physical
+form ✅. `adb -k` remains the general tool for live kernel variables.
 
 ### `modadmin -p` knows only the exported symbols; the 68040/060 load layout gives the rest ✅ {#modadmin-p-exported-only}
 
@@ -342,3 +346,4 @@ When the console is dead but a savestate still works ([Step 3](#step-3-read-a-ru
 - Same `objdump -dr` reloc-annotated method extended to the in-kernel SCSI path — `sdopen` and `getrdb` (RDB parser) traced by name out of their `exp` objects — firsthand ✅.
 - cdfs's `cdfs_diag` throwaway-global diagnostic (magic `0x0DF50001` written last; scan the `A3K1` chunk for the 4-aligned hit) — firsthand from the amix-cdfs port ✅.
 - Live `adb` on `/dev/kmem` (read with `adb - /dev/kmem`, write with `adb -w`; symbol addresses are file-relative so runtime VA = `nm` value + kernel load base, `0x08000000` on the real A4000 + Z3660, verified `z3660_enter` `nm` `0xD694` → live `0x0800D694`; poke a `static` by reading its operand address out of the live instruction stream) — first-party record, 2026-07-12, on real hardware ✅.
+- The **released 1.1 inspection tools** ✅: [`amigaux/amix`](https://github.com/amigaux/amix) `docs/WHATS-NEW.md`, "1.1" (`sar`, `sadc` and `timex -s` work with the filesystems as modules; `crash` starts on the 68030 line) and `media/docs/releases/1.1.md`, "Kernel inspection tools" (`crash` on the 68040/68060 kernel; `od -p` on the 68030 kernel), read 2026-11-20.

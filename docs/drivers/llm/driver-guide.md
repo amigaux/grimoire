@@ -71,7 +71,11 @@ The facts an LLM gets wrong unless told ✅ (the module guide and the
 - A STREAMS open runs at level 4, so a self-test that waits there for a level-2 interrupt by
   spinning never sees it.
 - The console goes through `cons_hook_set`, never `conputc`.
-- There is no DMA interface in DDI v1.0: never give a board the address of the module's own memory.
+- Never give a board the address of kmem or of the module's own memory: use the DDI's DMA calls
+  (`dma_alloc` for memory a Zorro III master reaches, `dma_prepare`/`dma_complete` around a
+  transfer, `dma_addr` for the address to arm, `dma_free`). They came with kabi minor 2 on both
+  kernel lines (k30.1.2, k46.1.2), so a module that uses them needs a kernel of that minor or later;
+  DDI 1.0 had none.
 - A module image is at most 256 KiB, and one `kmem_alloc` at most 256 KiB.
 - On k46, a framebuffer that a user maps is registered with `DDI_FB_REGISTER` from `_load`.
 - Headers are included by their path in the kit's stock tree, never by a relative path.
@@ -210,3 +214,4 @@ confidence tag.
   `docs/BUILDING.md`, `CONTRIBUTING.md` and `userland/pkgtools/README.md`, at amix `397b868f`, read
   2026-11-20 ✅.
 - This site's pages linked above, with their own sources; quirk 99 for the line limit ✅.
+- The DMA calls: amix `kernel/dlm/docs/abi/ddi.md`, "DMA (k30.1.2, k46.1.2)", and the kits' `kernel/dlm/abi/k30/ddi.list` and `k46/ddi.list` (each `dma_*` name at minor 2), the same on `master` and `next`, read 2026-11-20 ✅. (amix's `writing-a-module.md` §4 still says DDI v1.0 has no DMA interface; `ddi.md` is the contract.)

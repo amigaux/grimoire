@@ -6,16 +6,18 @@ status: draft
 
 # Toolchain & Packaging
 
-Amix builds software two ways. **On the box**: the bundled AT&T SVR4 `cc` (the kernel's reference compiler) or the stock Commodore-patched **GNU GCC 1.40.5** at `/usr/public/bin/gcc` ✅, with GNU `make` and GAS, then relink `/unix` ✅ (a native **GCC 2.7.2.3** exists on some community boxes, but the "installable pkg from amigaunix.com" attribution is unsourced 🔴 — see [the compiler table](#native-compilers-on-the-box)) — this is how the existing drivers ([Hydra](case-studies/hydra.md), [VA2000](case-studies/va2000.md)) are built. **On Linux**: as of 2026-06 a public, reproducible *cross*-toolchain exists — [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix), a GCC 2.7.2.3 retargeted to `m68k-cbm-sysv4` — that compiles Amix userland binaries and kernel/driver objects on a modern host (you supply your own licensed Amix sysroot) ✅. Finished software is shipped as SVR4 packages built with `pkgproto`/`pkgmk`/`pkgtrans` and installed with `pkgadd` ✅; the large community bundle is **AmixBP**, with a `zoo`+`cpio` fallback ✅.
+Amix builds software two ways. **On the box**: the bundled AT&T SVR4 `cc` (the kernel's reference compiler) or the stock Commodore-patched **GNU GCC 1.40.5** at `/usr/public/bin/gcc` ✅, with GNU `make` and GAS, then relink `/unix` ✅ (a native **GCC 2.7.2.3** exists on some community boxes, but the "installable pkg from amigaunix.com" attribution is unsourced 🔴 — see [the compiler table](#native-compilers-on-the-box)) — this is how the existing drivers ([Hydra](case-studies/hydra.md), [VA2000](case-studies/va2000.md)) are built. **On Linux**: since 2026-06 a public, reproducible *cross*-toolchain exists — [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix), a GCC 2.7.2.3 retargeted to `m68k-cbm-sysv4` — that compiles Amix userland binaries and kernel/driver objects on a modern host ✅. What amix builds with is the fork [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix), pinned at `33ebadc`, with the public [`amigaux/amix-system`](https://github.com/amigaux/amix-system) as its sysroot ✅. Finished software is shipped as SVR4 packages built with `pkgproto`/`pkgmk`/`pkgtrans` and installed with `pkgadd` ✅; the large community bundle is **AmixBP**, with a `zoo`+`cpio` fallback ✅.
 
-Two important caveats colour everything below. The Amix `/bin/sh` is **pre-POSIX**, which breaks many modern build scripts ✅. And the cross-toolchain still needs a **user-supplied licensed Amix sysroot** (the toolchain repo ships no Amix headers/libs/startup objects; until 2026-09-23 this project treated them as not redistributable — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary) for the outcome that lifted that), and its **C++/`g++` support is not finished yet** 🟡 — C is fully working.
+Two important caveats colour everything below. The Amix `/bin/sh` is **pre-POSIX**, which breaks many modern build scripts ✅. And the cross-toolchain needs an **Amix sysroot**, which the toolchain repo does not carry: a checkout of the public [`amigaux/amix-system`](https://github.com/amigaux/amix-system) (what amix uses) or your own installation's `/usr` (until 2026-09-23 this project treated those files as not redistributable — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary) for the outcome that lifted that) ✅. gcc-cross-amix builds **C only**; C++ is built with gcc14-cross-amix ✅.
 
 **Two cross compilers, two jobs (2026-10).** The amigaux project builds **kernel space** — kernels,
 drivers, boot loaders, [loadable modules](loadable-modules.md) — only with GCC 2.7.2.3
 (gcc-cross-amix), because that code must be object-compatible with what Amix itself was built with ✅,
 and builds **userland** — packages, tools, C++ programs — with GCC 14 ([gcc14-cross-amix](#the-userland-compiler-gcc14-cross-amix-gcc-14)) ✅.
 The `amigaux/amix` monorepo pins both by commit in `toolchain/` and builds them reproducibly in a
-container ✅.
+container ✅. `make tools` pulls the published build images by digest (`toolchain/image.ref`), or
+builds them from the pins with `TOOLS_FROM_SOURCE=1`, and `make dist` builds the release in them ✅
+(amix `docs/BUILDING.md`).
 
 This page is the toolchain companion to [building and relinking the kernel](kernel-build.md) and to [writing a STREAMS driver](writing-a-streams-driver.md) (the worked native build example). For the underlying driver model see [the Amix device-driver model](driver-model.md).
 
@@ -66,7 +68,7 @@ If a tool insists on a POSIX shell, run it under `ksh` (the default *login* shel
 
 ## Building drivers: native on-box, and the gcc-cross-amix cross-toolchain
 
-There are now **two** working paths. The modern Amix drivers are built **natively on the box**: the [Hydra STREAMS driver](case-studies/hydra.md)'s `Makefile` invokes the on-box compiler (`cc` / `ld -r`) — `make` produces a relocatable object (`exp`), then `cd /usr/sys && make force` relinks the kernel ✅. **And as of 2026-06 there is also a public, reproducible *cross*-toolchain** — [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix) — that builds a Linux-hosted GCC targeting `m68k-cbm-sysv4`, so you can compile Amix userland binaries *and* kernel/driver objects on a modern host (see [Cross-compiling with gcc-cross-amix](#cross-compiling-on-linux-the-gcc-cross-amix-toolchain) below) ✅. That **resolves the long-standing "no public cross-toolchain recipe" gap.** Native is still the simplest path for a one-off driver; the cross-toolchain is the edit-on-a-modern-host option.
+There are now **two** working paths. The modern Amix drivers are built **natively on the box**: the [Hydra STREAMS driver](case-studies/hydra.md)'s `Makefile` invokes the on-box compiler (`cc` / `ld -r`) — `make` produces a relocatable object (`exp`), then `cd /usr/sys && make force` relinks the kernel ✅. **And since 2026-06 there is also a public, reproducible *cross*-toolchain** — first [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix), now built by amix from the fork [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix) — that builds a Linux-hosted GCC targeting `m68k-cbm-sysv4`, so you can compile Amix userland binaries *and* kernel/driver objects on a modern host (see [Cross-compiling with gcc-cross-amix](#cross-compiling-on-linux-the-gcc-cross-amix-toolchain) below) ✅. That **resolves the long-standing "no public cross-toolchain recipe" gap.** Native is still the simplest path for a one-off driver; the cross-toolchain is the edit-on-a-modern-host option.
 
 ### The target triple
 
@@ -118,40 +120,52 @@ Note the kernel image name: modern 2.1 systems and the community repos call the 
 
 ### Cross-compiling on Linux: the gcc-cross-amix toolchain ✅
 
-The cross path is now **public and reproducible**: **[`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix)** is a `Makefile` that bootstraps a Linux-hosted toolchain for `m68k-cbm-sysv4` ✅. (This resolves the gap our earlier notes flagged as open 🔴.)
+The cross path is now **public and reproducible**: **[`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix)** is a `Makefile` that bootstraps a Linux-hosted toolchain for `m68k-cbm-sysv4` ✅. (This resolves the gap our earlier notes flagged as open 🔴.) The cross toolchain amix uses is **[`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix)**, our fork of it, pinned by amix at `33ebadc` ✅; it differs from upstream in `-m68060`, the assembler wrapper, `scan060` and its test targets (below).
 
 - **Components:** GNU **binutils 2.8.1** + **GCC 2.7.2.3** (the version the community native builds use; the stock box compiler is GCC 1.40.5), downloaded from the GNU archive and built with `-std=gnu89` (the 1990s configure tests and sources predate C99). The installed cross driver is **`m68k-cbm-sysv4-gcc`** — our earlier docs called it `m68k-amix-gcc`, a placeholder; the real binary is the triple-prefixed one ✅.
-- **The one thing you must supply: a licensed Amix sysroot.** The repo deliberately ships **no** Amix headers/libraries/startup objects (the licensing boundary). You point it at your own Amix tree — `make all AMIX_ROOT=/path/to/usr-amix` — and its `sysroot` target copies `usr/include`, `usr/lib` (`libc.so.1`, `ld.so.1`), `usr/ccs/lib` (`crt1.o`/`crti.o`/`crtn.o`), and `usr/sys` into the toolchain ✅.
-- **Status (2026-06):** the C compiler, GNU `as`, and GNU `ld` all work, and a **dynamically-linked Amix C executable links and runs on real Amix** ✅. **C++ / `g++` is not complete yet** 🟡.
+- **The one thing it needs from outside: an Amix sysroot.** The repo carries **no** Amix headers/libraries/startup objects. Point `AMIX_ROOT` at a checkout of the public [`amigaux/amix-system`](https://github.com/amigaux/amix-system) (what amix uses) or at a copy of your own installation ✅ — `make all AMIX_ROOT=/path/to/amix-system` — and its `sysroot` target copies `usr/include`, `usr/lib` (`libc.so.1`, `ld.so.1`), `usr/ccs/lib` (`crt1.o`/`crti.o`/`crtn.o`), and `usr/sys` into the toolchain ✅.
+- **Status (2026-06):** the C compiler, GNU `as`, and GNU `ld` all work, and a **dynamically-linked Amix C executable links and runs on real Amix** ✅. The pinned fork builds **C only** (no C++); C++ is built with [gcc14-cross-amix](#the-userland-compiler-gcc14-cross-amix-gcc-14) ✅.
+
+For amix work, use its build container instead of a host install: `make tools SYSTEM=../amix-system`
+pulls the published images by digest, and `make dist` builds in them (amix `docs/BUILDING.md`) ✅. A
+host build of the fork:
 
 ```sh
-make all AMIX_ROOT=/path/to/usr-amix      # build binutils+gcc, populate the sysroot, install the wrapper
+make all AMIX_ROOT=/path/to/amix-system   # build binutils+gcc, populate the sysroot, install the wrapper
 . build/env.sh
 m68k-cbm-sysv4-gcc hello.c -o hello        # -> ELF 32-bit MSB executable, m68k 68020, SYSV, dynamically linked
 ```
 
-For a **kernel/driver object** (compile on Linux, link natively on the Amiga), the repo's `test-random` target cross-compiles a real Amix driver source to a relocatable object ✅:
+For a **kernel/driver object** (compile on Linux, link natively on the Amiga), the fork's
+`make test-kernel-object` compiles stock drivers from the Amix tree with `AMIX_KERNEL_CFLAGS` and
+checks them against the native objects, and `make check` runs every regression gate but `test-mul64-run` ✅. Upstream's
+equivalent is its `test-random` target, which cross-compiles the stock `random.c` driver to a
+relocatable object ✅:
 
 ```sh
-make test-random AMIX_ROOT=/path/to/usr-amix CPUFLAGS=-m68030
+make AMIX_ROOT=/path/to/amix-system test-kernel-object     # the fork
+make test-random AMIX_ROOT=/path/to/amix-system CPUFLAGS=-m68030   # upstream isoriano1968
 #   -> build/test/random.o : ELF 32-bit MSB relocatable M68000  (resembles native AMIX driver objects)
 ```
 
-The wrapper compiles via `-S` → an `.lcomm` assembly fix-up → `as -m68020`, working around quirks of the old GCC's output ✅. So you can now develop a driver (e.g. the [A4091](a4091-53c710-driver.md) or a new NIC) on a modern host and do only the final relink on Amix — though the native on-box build (above) remains the simplest path for a single driver. This was open gap #1 in §13 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md), now closed.
+The upstream wrapper compiles via `-S` → an `.lcomm` assembly fix-up → `as` (`-m68020` unless the compile names another CPU), working around quirks of the old GCC's output ✅; the pinned fork does its repairs in an assembler wrapper instead ([below](#the-assembler-fixup-family-swbeg-fcmp-and-the-tdivs-divide-with-remainder-bug)). So you can now develop a driver (e.g. the [A4091](a4091-53c710-driver.md) or a new NIC) on a modern host and do only the final relink on Amix — though the native on-box build (above) remains the simplest path for a single driver. This was open gap #1 in §13 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md), now closed.
 
-**68060 targets.** GCC 2.7.2.3 has no `-m68060`; compile code for a 68060 with `-m68040` ✅. At
-every optimisation level and `-m680x0` flag it emits the 64-bit `mulu.l`/`muls.l` form, which the
-68060 does not implement, for every divide or modulo by a constant ✅. The [`jusii/gcc-cross-amix`](https://github.com/jusii/gcc-cross-amix) fork's
-wrapper expands that form into 16×16 `mulu.w` sequences by default and installs
+**68060 targets.** Stock GCC 2.7.2.3 has no `-m68060` ✅. At every optimisation level and
+`-m680x0` flag up to `-m68040` it emits the 64-bit `mulu.l`/`muls.l` form, which the 68060 does not
+implement, for every divide or modulo by a constant ✅. The [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix) fork
+adds `-m68060`: `-m68040` with those multiply patterns turned off, so a divide by a constant is a
+32-bit `divs.l`/`divu.l`, a `long long` multiply calls `__muldi3`, and the code also runs on a
+68020, 030 and 040 ✅. Prefer it for 68060 code. For other flags the fork's wrapper expands the 64-bit
+form into 16×16 `mulu.w` sequences by default, and it installs
 `m68k-cbm-sysv4-scan060`, which reports any 68060-unimplemented instruction in objects, archives or
-executables (`AMIX_SCAN060=1` runs it on every compile) ✅; neither is in the upstream repo linked
-above yet. The 1.0 68060 kernels emulate the 64-bit multiply and divide forms, so on them the
+executables (`AMIX_SCAN060=1` runs it on every compile) ✅; neither the expansion nor `scan060` is
+in the upstream repo yet. The 1.0 68060 kernels emulate the 64-bit multiply and divide forms, so on them the
 expansion saves slow emulation rather than a killed process 🟡
 (the 1.0 release notes, not public).
 
-**Which commit the project builds with.** `amigaux/amix` pins `jusii/gcc-cross-amix` at `8949028`
-(`toolchain/gcc-cross-amix.pin`, 2026-10-29), the fork's `main` with the 64-bit multiply expansion and
-`scan060` ✅. The fork's wrapper fixes (`-c` without `-o`, `-lNAME` resolved by name so `DT_NEEDED` is
+**Which commit the project builds with.** `amigaux/amix` pins `amigaux/gcc-cross-amix` at `33ebadc`
+(`toolchain/gcc-cross-amix.pin`, 2026-11-01), with `-m68060`, the 64-bit multiply expansion,
+`scan060` and the assembler wrapper ✅. (Its pin before that, 2026-10-29, was `8949028`.) The fork's wrapper fixes (`-c` without `-o`, `-lNAME` resolved by name so `DT_NEEDED` is
 right, `volatile`/`const` kept under `-traditional`, `-d<X>` kept off `ld` plus a read-only sysroot
 guard) were merged upstream as [isoriano1968/gcc-cross-amix #7](https://github.com/isoriano1968/gcc-cross-amix/pull/7)
 on 2026-10-19 ✅; the 64-bit multiply expansion and `scan060` are still fork-only.
@@ -198,8 +212,14 @@ known, and the third was the most consequential ✅:
    [kernel build](kernel-build.md) for the blast-radius map and
    [package management](../how-it-works/package-management.md) for the crash this solved.
 
-**`fix_asm` runs only when you compile *through* the wrapper — `-S` bypasses every repair** ✅.
-`m68k-cbm-sysv4-gcc` is a shell wrapper: it runs the real `gcc.real -S`, post-processes the emitted
+**In the upstream wrapper (and the fork before 2026-11-01), `fix_asm` runs only when you compile
+*through* the wrapper — `-S` bypasses every repair** ✅. The pinned fork (`33ebadc`) changed this: it
+runs the rules in an assembler wrapper installed where `gcc.real` looks first
+(`lib/gcc-lib/m68k-cbm-sysv4/2.7.2.3/as`), so every compile gets them, whatever the route — `-c`, the
+compile half of a link, `.i` input, `-pipe`, `-save-temps` and `-x c` alike — and `-S` writes the
+repaired assembly, marked with a `| amix fix_asm` comment so it is not repaired twice ✅. A `gcc -S`
+run outside the wrapper's environment, and `-save-temps`' own `.s` file, are still unrepaired ✅. What
+follows describes the older design. There, `m68k-cbm-sysv4-gcc` is a shell wrapper: it runs the real `gcc.real -S`, post-processes the emitted
 SGS-syntax assembly through `fix_asm`, and only then assembles. That post-process happens **only when
 the wrapper reaches the assembly stage internally**. If a caller passes **`-S`** to the wrapper, it
 is detected and the wrapper `exec`s straight to `gcc.real` with **zero fixups applied** — silently
@@ -207,7 +227,7 @@ losing all of the repairs above. The most dangerous one to lose is the **`fcmp` 
 operand-order reversal** (`SGS_CMP_ORDER`): for an FP-register-vs-FP-register comparison this does not
 fail to assemble — it assembles to a *different, valid* encoding with the **operands swapped**, so
 `a > b` between two doubles silently evaluates as `b > a`, with no diagnostic at any stage ✅. The `fcmp` defect itself is fixed and gated
-(`make test-fcmp`), but the **general bypass property remains true of the wrapper as designed**: any
+(`make test-fcmp`), but the **general bypass property remains true of the upstream wrapper**: any
 build system that compiles to `.s` and assembles separately, resolves to `gcc.real` directly, or
 drives `as` itself inherits none of the wrapper's repairs ✅. This is the same silent-mis-encode
 family as the `#`-as-comment scrub and the `tdivs` bug below, and the rule that covers all of them is
@@ -285,7 +305,7 @@ rewrite to `&`, and verify the encoding, not the build's exit status ✅.
 ### The wrapper's `-c foo.s` with no `-o` silently destroys the source ✅
 
 A destructive trap in the cross **wrapper's** `.s` path (present in the shipped wrapper as of
-2026-07 ✅; fixed in the [`jusii/gcc-cross-amix`](https://github.com/jusii/gcc-cross-amix) fork by
+2026-07 ✅; fixed in the [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix) fork by
 `1bfffbd`, 2026-09-15, gated by `make test-objdir`, and merged upstream with
 [isoriano1968/gcc-cross-amix #7](https://github.com/isoriano1968/gcc-cross-amix/pull/7) on 2026-10-19 ✅):
 
@@ -328,7 +348,11 @@ pieces SVR4.0 predates ✅. It is for **application software only** — its own 
 device drivers and anything that must be object-compatible with what Amix was built with ✅. Since
 2026-10 it is the amigaux project's userland compiler (packages, the package tools, the box tools,
 the installer's userland); the package line was switched after a rebuild-and-compare of its packages
-on a 68030 and a 68060 (byte-equal behaviour, 42/42 checks) ✅ (first-party record).
+on a 68030 and a 68060 (byte-equal behaviour, 42/42 checks) ✅ (first-party record). amix builds it
+from [`amigaux/gcc14-cross-amix`](https://github.com/amigaux/gcc14-cross-amix), our fork of
+Antti Sokero's repository: the release line pins the fork's `release-1.1` branch at `9d13dcd`
+(`toolchain/gcc14-cross-amix.pin`), 30 commits past upstream `main` `58130fe` (shared libraries,
+`libamixrt.so.1`, the `m68020-60` runtime, the wrong-code fixes below) ✅.
 
 ### Why `m68k-elf`, and the one ABI difference ✅
 
@@ -379,10 +403,11 @@ nothing or kills the process ✅. The toolchain's specs add `-malign-int` to eve
   them (`__floatundidf`, `unordered_map` rehashing) dies with **SIGSYS on a 68030 with a 68881/68882**
   ✅ (measured on an upstream build, 2026-10-29). **Upstream `main` is therefore not 68881-safe.** The
   amigaux project builds the runtime `--with-cpu=m68020-60` instead (the `m` matters: the 68020 set
-  and the 68881 FPU, tuned for the range), which is safe on both; that build is not public yet
-  (2026-10-29) ✅. `-m68060` remains available for code that only ever runs on a 68060.
-- **`-mno-strict-align`** is upstream's default from `e8b6997` (2026-10-27); the build the amigaux
-  packages use predates it and passes the flag explicitly ✅. On a 68LC060 at 80 MHz it measured
+  and the 68881 FPU, tuned for the range), which is safe on both; that is the default of the
+  amigaux fork's `release-1.1` (`9d13dcd`, which amix pins), whose `build-cross.sh` checks the
+  installed runtime with `check-68060-safe.py --68881` ✅. `-m68060` remains available for code that only ever runs on a 68060.
+- **`-mno-strict-align`** is upstream's default from `e8b6997` (2026-10-27); the pinned build
+  (`9d13dcd`) includes it, and its specs add the flag themselves ✅. On a 68LC060 at 80 MHz it measured
   Dhrystone 1.60× the strict build and 1.43× GCC 2.7.2.3 ✅ (first-party record); on a 68040 it needs
   a port kernel that handles misaligned accesses across a page boundary, not yet measured on 68040
   metal 🔴.
@@ -396,14 +421,16 @@ The 68060 dropped the 64-bit `mul`/`div` forms, and libgcc's 64-bit divide compi
 them; without an integer-support handler in the kernel, any 64-bit division *by a variable* kills the
 process ✅. `tools/check-68060-safe.py` decodes instruction **encodings** (objdump names `divul`/`divull`
 backwards) and flags the 64-bit forms; it reads ELF files, archives and listings, and reports a
-disassembly that lost sync at a label as untrustworthy rather than clean ✅. The project's build adds a
-`--68881` mode that also flags the 040/060-only FPU forms, which upstream's checker does not look for
-(as of `58130fe`) ✅ — so a runtime upstream's checker passes can still trap on a 68030 + 68881. `cas2` traps on the 68060 at any alignment; GCC 14 does not emit it ✅.
+disassembly that lost sync at a label as untrustworthy rather than clean ✅. The amigaux fork's
+checker (`release-1.1`, `9d13dcd`) has a `--68881` mode that also flags the 040/060-only FPU forms,
+which upstream's checker does not look for (as of `58130fe`) ✅ — so a runtime upstream's checker passes can still trap on a 68030 + 68881. `cas2` traps on the 68060 at any alignment; GCC 14 does not emit it ✅.
 
 ### Known defects and workarounds
 
 | Defect | Effect | Workaround | Tag |
 |---|---|---|---|
+| GCC 14.2.0's fold-mem-offsets pass (on from `-O2`) | wrong code: it folds a constant into one memory operand while the same register still indexes a memory-to-memory move's destination, so `a[n - 1] = s->v` stores `a[n]` | fixed in the pinned build (`9d13dcd`): its specs pass `-fno-fold-mem-offsets` at every level, and patch `gcc-0003` fixes the pass for anyone who turns it back on. Code an older build compiled at `-O2` can carry the fault | ✅ |
+| `bset`/`bclr %dN,<memory>` with a bit number of 8 or more (GCC PR target/126121) | GCC 14.2.0 used the whole bit number; the CPU uses its low three bits, so bit `n & 7` of the byte changed where C changes nothing | fixed in the pinned build (`9d13dcd`): upstream's fix (patch `gcc-0001`) plus `gcc-0002`, with `tools/check-bset-mem.py` to find the faulty forms in objects, archives and programs an older build made | ✅ |
 | libc's printf family and `ll` | `%lld` prints the high word and puts every later argument 4 bytes out of step; `%llo` the same, so a value under 4 GiB prints as 0 | `libamixc99`'s `snprintf`/`vsnprintf` are correct; **`fprintf` is not replaced** | 🔴 open |
 | Vendor 1991 `libX11.a` and siblings | malformed `sh_link` on `.rela` sections; modern `ld` silently drops the relocations and the program jumps to 0 (ld 2.8.1 tolerated it) | run `tools/fix-x-libraries.sh` (repaired copies) before linking X | ✅ |
 | Headers without C++ linkage guards; K&R `static` prototypes in `sys/stat.h` and others | C++ cannot include them as shipped | generated wrappers and `make-kandr-fixes.py` | ✅ |
@@ -702,8 +729,8 @@ The patch disk uses a related (but distinct) self-extracting mechanism — a 1 K
 - [Writing a STREAMS Driver](writing-a-streams-driver.md) — the worked native build example.
 - [Hydra Case Study](case-studies/hydra.md) — the real STREAMS driver built natively on Amix (`make` / `make force`).
 - [VA2000 Case Study](case-studies/va2000.md) — a native single-file `cc` build and the pre-POSIX `/bin/sh` gotcha.
-- [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix) — the Linux-hosted cross-toolchain bootstrap (`make all AMIX_ROOT=…`); the project builds from the [`jusii/gcc-cross-amix`](https://github.com/jusii/gcc-cross-amix) fork.
-- [`asokero/gcc14-cross-amix`](https://github.com/asokero/gcc14-cross-amix) — the GCC 14 userland cross compiler; its `docs/TOOLCHAIN.md` records every measurement behind the flags above.
+- [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix) — the Linux-hosted cross-toolchain bootstrap (`make all AMIX_ROOT=…`); amix builds from the [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix) fork, pinned at `33ebadc`.
+- [`asokero/gcc14-cross-amix`](https://github.com/asokero/gcc14-cross-amix) — the GCC 14 userland cross compiler; its `docs/TOOLCHAIN.md` records every measurement behind the flags above. amix builds from the [`amigaux/gcc14-cross-amix`](https://github.com/amigaux/gcc14-cross-amix) fork (`release-1.1`, pinned at `9d13dcd`).
 - [Loadable kernel modules](loadable-modules.md) — kernel-space code built with gcc-cross-amix against the ABI kit.
 - [The Amix Device-Driver Model](driver-model.md) — major/minor numbers and the `cdevsw`/`bdevsw` tables drivers plug into.
 - [Versions](../reference/versions.md) — version matrix (GCC 2.7.2.3 built under 2.03; `rdbunix`→`relocunix` rename).
@@ -720,20 +747,23 @@ The patch disk uses a related (but distinct) self-extracting mechanism — a 1 K
 - `amix_21_root.adf` analysis via `tools/inspect-adf.sh` (install uses `amixpkg`/`cpio`/`dd` from tape).
 - amigaunix.com — *downloads* page (AmixBP, Michael Parson) and *more_software* / *tips-tricks*: <https://www.amigaunix.com/doku.php/home>
 - SVR4 packaging tools (`pkgproto`, `pkgmk`, `pkgtrans`, `pkgadd`) — standard AT&T System V Release 4 documentation.
-- The Installer-NG (not public) and [amix-packagemanager](https://github.com/jusii/amix-packagemanager) work (first-party record, 2026-07-22/24) — platform behaviours root-caused under Amiberry and on a real A4000 + Z3660 (s5/UFS state reads, on-metal digest checks) ✅ (🟡 where tagged).
-- The [`jusii/gcc-cross-amix`](https://github.com/jusii/gcc-cross-amix) fork (`main`): `2ab2b22` (the wrapper's 64-bit multiply expansion and `m68k-cbm-sysv4-scan060`), `80b6d67` and the README's "68060 Integer Code" section (no `-m68060`; use `-m68040`), all 2026-10-05; `1bfffbd` (the `-c` with no `-o` fix, `make test-objdir`) and `7036952` (its README scope), 2026-09-15. The `-c` fix reached the `isoriano1968` upstream with #7 (merged 2026-10-19); the 64-bit multiply expansion and `scan060` are not upstream yet. `ef7c86e` (the bit-field `#` → `&` repair) is in both. The 68060 kernels' integer emulation: the Installer-NG 1.0 release notes (not public; draft) 🟡.
+- The Installer-NG and amix-packagemanager work (first-party record, 2026-07-22/24; the package tools are now [`amigaux/amix`](https://github.com/amigaux/amix/tree/master/userland/pkgtools) `userland/pkgtools`) — platform behaviours root-caused under Amiberry and on a real A4000 + Z3660 (s5/UFS state reads, on-metal digest checks) ✅ (🟡 where tagged).
+- The [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix) fork (`main`; formerly at `jusii/gcc-cross-amix`, same commits): `2ab2b22` (the wrapper's 64-bit multiply expansion and `m68k-cbm-sysv4-scan060`), `80b6d67` and the README's "68060 Integer Code" section (no `-m68060`; use `-m68040`), all 2026-10-05; `1bfffbd` (the `-c` with no `-o` fix, `make test-objdir`) and `7036952` (its README scope), 2026-09-15. The `-c` fix reached the `isoriano1968` upstream with #7 (merged 2026-10-19); the 64-bit multiply expansion and `scan060` are not upstream yet. `ef7c86e` (the bit-field `#` → `&` repair) is in both. The 68060 kernels' integer emulation: the Installer-NG 1.0 release notes (not public; draft) 🟡.
 - First-party cross-toolchain findings (2026-07-27): SGS-dialect probes of the installed `m68k-cbm-sysv4` binutils-2.8.1 `as` (the `#`-as-comment failure reproduced; per-construct MIT-syntax compatibility probes) and the wrapper `-c foo.s` source-destruction defect (minimally reproduced three times; cause chain pinned by tracing the wrapper; empty-stdin control via `as -m68020 -o t.s </dev/null`).
 - The **amix-packages** porting campaign — `PORTING.md` and a corroborating ports-roadmap research pass (2026-08-28), all from direct Amix-sysroot inspection ✅: the byte-identical `libcurses.a`/`libtermcap.a`/`libtermlib.a` archive exporting both APIs and the "link `-lcurses`" policy (§3.4); no POSIX `regcomp`/`regexec`, only SVR4 `<regexp.h>` + libgen `regcmp`; `strcasecmp` present only in the networking libs and declared in no header (§3.1); `snprintf`/`vsnprintf`/`getpagesize` absent from `libc.so.1` (and `snprintf` undeclared in `stdio.h`) with the GCC 2.7.2.3 implicit-declaration miscompile (the reproduced `atof` case) and the wider absent-symbol list (§3.1); the SVR4 `/proc` 37-`PIOC*`-ioctl model vs. Linux text files, with the parallel-port-`PIOC*` disambiguation (§3.2); and the `fix_asm`-only-through-the-wrapper property — `-S` bypasses every fixup, including the silent `fcmp` operand-order reversal (§2.2). No proprietary SVR4 headers or source reproduced — symbol/header **presence and behaviour** observed live, paraphrased.
 - [`asokero/gcc14-cross-amix`](https://github.com/asokero/gcc14-cross-amix) `main` (public) ✅: `README.md` (scope, "not for the kernel", the X-library repair, the 68060 trap, the sysroot), `LICENSE` (MIT, Antti Sokero), `docs/TOOLCHAIN.md` §1–§15 (the ELF and linker facts, §4 the return-value table, §6 why not `m68k-linux-gnu`, §9 the 68060, §11 the libc gaps, §15 `.init_array`) and its sections "-malign-int is the ABI" and "Linking the 1991 libX11.a"; `toolchain/install-specs.sh` (the specs); `toolchain/amix-abi.h` and commit `78a337a` (the return convention, 2026-10-27); `e8b6997` (`-mno-strict-align` default); `8a4cd12` (`cas2`); `tools/check-68060-safe.py`.
 - [`amigaux/amix`](https://github.com/amigaux/amix) @ `95bf2f3`: `toolchain/README.md` and the two `.pin` files (the split, the container, `TOOLCHAIN.sha256`), `system/README.md` (the reference sysroot) ✅.
+- [`amigaux/amix`](https://github.com/amigaux/amix) `master`, read 2026-11-20 ✅: `toolchain/gcc-cross-amix.pin` (`amigaux/gcc-cross-amix` `33ebadc`), `toolchain/gcc14-cross-amix.pin` (`amigaux/gcc14-cross-amix` `9d13dcd`, branch `release-1.1`), `toolchain/README.md`, `toolchain/image.ref` (the published build images), `toolchain/CHANGELOG.md` (2026-11-01, 2026-11-11, 2026-11-16 and 2026-11-20 entries), `docs/BUILDING.md` (`make tools`, `make dist`); `system/amix-system.pin`; `userland/pkgtools/`, `userland/packages/rsync`, `coreutils`, `tar`.
+- [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix) at `33ebadc`, read 2026-11-20 ✅: `README.md` (the status block: `-m68060`, C only; "The AMIX Tree"; "What The Wrapper Repairs", the assembler wrapper under `gcc.real`; "68060 Integer Code"; "Regression Gates"; "Kernel And Driver Objects"), `Makefile` (`check`, `test-kernel-object`); commits `2848bc2` (`-m68060`) and `0b1f2f8` (the assembler wrapper), 2026-11-01. Upstream `isoriano1968/gcc-cross-amix` `main` `f6a4902`: `test-random`, the `-S` wrapper.
+- [`amigaux/gcc14-cross-amix`](https://github.com/amigaux/gcc14-cross-amix) `release-1.1` at `9d13dcd`, read 2026-11-20 ✅: `README.md` (the `m68020-60` default, "Two GCC fixes: bits of a byte in memory", "fold-mem-offsets is off"), `toolchain/install-specs.sh` (`-mno-strict-align`, `-fno-fold-mem-offsets` in the self spec), `toolchain/build-cross.sh` (`--with-cpu=m68020-60`, the `--68881` check), `tools/check-68060-safe.py` (`--68881`); `git log 9d13dcd --not 58130fe` (30 commits); `e8b6997` an ancestor of `9d13dcd`.
 - The gcc14 evaluation and the package-line switch (first-party record, 2026-10-25 to 2026-10-29): probes on the host, an emulated 68030 and a 68060 with FPU; packages rebuilt and compared on a 68030 and a 68060; the return-ABI defect found and re-measured; the `-mno-strict-align` Dhrystone row on a real 68LC060 ✅.
 - The project's system-files inventory (first-party record, 2026-10-29) ✅: the patch disk's `replace.list`/`modify.list`/`changes`, compared with `/usr` read from a cleanly installed 2.1c system and with the kernel-work sysroot; the kit rebuilt both ways on both lines.
 - The amix-packages diffutils 2.8.1 port (first-party record, 2026-10-29) ✅: `recipes/diffutils/build.sh` and `recipes/make/build.sh` (the `vfork` pin), the emulated 68030 rows (the `sdiff -o` exit, the empty help2man pages), `nm` and header reads of the sysroot (`sigaltstack`).
 - [isoriano1968/gcc-cross-amix #7](https://github.com/isoriano1968/gcc-cross-amix/pull/7) (the wrapper fixes, opened 2026-10-13, merged 2026-10-19 as `959c17f`; state read with `gh` on 2026-10-29) ✅.
 - The upstream-runtime FPU check (first-party record, 2026-10-29) ✅: an upstream `58130fe` build checked with the project's `check-68060-safe.py --68881` (68060-safe for integer forms; 614 FPU instructions in 040/060-only forms across libgcc and libstdc++); upstream's `README.md` ("defaults to `--with-cpu=68060`") and `toolchain/build-cross.sh` at that commit.
 - The bzip2 1.0.8 and coreutils 5.2.1 ports (first-party record, 2026-10-29) ✅: sysroot reads (`nm` of `libc.so.1` and the `libc.so` archive, the headers) and the emulated 68030 runs behind the gaps list, the `TZ` crash and the `configure` trap.
-- The rsync 3.1.3 port (first-party record, 2026-10-30) ✅: the `ftruncate` probe rows and the `truss` of `gethostbyname()` on an emulated stock 2.1c (details in quirk 90 and on the networking page); `ls -l` of `/usr/bin/rsh` and the `nobody` entries of `/etc/passwd` and `/etc/group` read on the box; [amix-packages](https://github.com/jusii/amix-packages) `e7ac916` (`recipes/rsync/`).
+- The rsync 3.1.3 port (first-party record, 2026-10-30) ✅: the `ftruncate` probe rows and the `truss` of `gethostbyname()` on an emulated stock 2.1c (details in quirk 90 and on the networking page); `ls -l` of `/usr/bin/rsh` and the `nobody` entries of `/etc/passwd` and `/etc/group` read on the box; `e7ac916` (`recipes/rsync/`, in the former jusii/amix-packages); the recipe is now [`amigaux/amix`](https://github.com/amigaux/amix/tree/master/userland/packages/rsync) `userland/packages/rsync`.
 - The stock `libm.a` measurements (first-party record, 2026-10-30) ✅ — the `sqrt` correction from follow-up probes calling libm's `sqrt` through a function pointer with `%fp0`/`%fp1` and the stack preloaded, `objdump` of the first probe's `main` (one inline `fsqrt`, re-read for this page), and an `FPCR`/`fpsetmask` read; ulps recomputed for this page: `ar t` and `objdump -d` of the sysroot's `/usr/ccs/lib/libm.a` (21 `fmovecr`, 16 `fintrz`, no transcendental instructions; counts re-read for this page), link maps of one-call programs, and a GCC 14 test program (19 functions, raw IEEE bits) run on an emulated stock 2.1c 68030 and an emulated 68040 on the 040/060 kernel line with unimplemented-instruction trapping on, the outputs equal; ulps against `mpmath` at 200 bits; a musl 1.2.5 `src/math` build of the same program (amix-packages).
-- The coreutils 5.2.1-3 and gtar 1.14-7 rebuilds (first-party record, 2026-10-30) ✅: the `stat -c %s` and `stat -f` rows on the box, `stat.c`'s run-time format assembly, `nm` of `truncate.o` in the static libc archive (`_ftruncate` T, `ftruncate` W); [amix-packages](https://github.com/jusii/amix-packages) `97bbcf1` (patch 09, the `ftruncate` replacement), `cad15e4`, `cbd8c25`.
+- The coreutils 5.2.1-3 and gtar 1.14-7 rebuilds (first-party record, 2026-10-30) ✅: the `stat -c %s` and `stat -f` rows on the box, `stat.c`'s run-time format assembly, `nm` of `truncate.o` in the static libc archive (`_ftruncate` T, `ftruncate` W); `97bbcf1` (patch 09, the `ftruncate` replacement), `cad15e4`, `cbd8c25` (in the former jusii/amix-packages); the recipes are now [`amigaux/amix`](https://github.com/amigaux/amix/tree/master/userland/packages) `userland/packages/coreutils` and `userland/packages/tar`.
 - The Heirloom tar and Dropbear ports (first-party record, 2026-11-01/02) ✅: the `%llo` size fields written as 0 by an unpatched Heirloom tar build on 68030 and 68060 systems in emulation, caught by the package gate's `ll`-printf check ([`amigaux/amix`](https://github.com/amigaux/amix) `userland/packages/heirloom-tar`, `b07d4cb`, on `master`); the pty probes (session leader and child pushes, `tcgetattr` and `TIOCSWINSZ` on the master, `ls -l` of the nodes, `nm -D` of the sysroot `libc.so.1`) on the 1.1 disks booted on 68030 and 68060 kernels in emulation, behind Dropbear's patch 05 (`userland/packages/dropbear`, `51ba153`, on `master`).
 - The **static `vfork` and the X11R6.3 Imake trap** (first-party record, 2026-11-02) ✅: the `xinit` cores on a real A4000D and the stock `libc.so.1` disassembly behind [quirk 98](../how-it-works/quirks.md#98-vfork-child-signal-table); `Imake.tmpl`; the package audit and the x11r63 fix ([`amigaux/amix`](https://github.com/amigaux/amix) `userland/packages/x11r6.3`, `c3abeff`, `443fe46`, on `master`).

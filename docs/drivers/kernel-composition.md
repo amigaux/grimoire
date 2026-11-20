@@ -6,7 +6,7 @@ status: draft
 
 # Composing multi-driver kernels
 
-> **amigaux 1.1 note.** The loadable-module system in development for amigaux 1.1 replaces this
+> **amigaux 1.1 note.** The loadable-module system of amigaux 1.1 and later replaces this
 > page's one-kernel-per-root-family answer: one kernel per CPU line, with root controllers and
 > filesystems loaded as modules ([loadable kernel modules](loadable-modules.md)). Everything below
 > applies to stock Amix and to the amigaux 1.0 kernels.
@@ -229,4 +229,5 @@ Neither is committed work; the family-kernel convention above deliberately avoid
 - [Building & installing a kernel](kernel-build.md) sources — the cdfs size-delta / super-DMAC mountroot panic (its reach explanation refuted 2026-10-02) ✅ and the relink-kit workflow.
 - [Device & card reference](../reference/device-list.md) sources — stock and community major assignments, the cross-tree major-48 collision ✅.
 - Floppy budget: [Adding drivers to a custom boot disk](../boot-disks/adding-drivers-to-boot-disk.md) (compressed-kernel budget 🟡) and the `fd0unix` headroom measurement (first-party record, 2026-08-16) ✅.
-- The **A4000T `$DD0000` reading** (first-party record, 2026-09-24): the shipped 060 kernel's unstripped `autocon()` disassembly plus the stock `support.c`/`sd.c`/`a3091.c` — the load-address phantom at `0xDD0000` sorting as card 0; on an A4000T that window is the onboard NCR 53C710. The boot hang of a kernel without the chipset-gated probe on an A4000T + Z3660 (2 of 2 cold boots; first-party record, 2026-09-28) and the unterminated local-I/O cycle behind it (the Z3660 CPLD waits for `DSACK`/`AVEC`/`BERR` with no timeout): amix-a4091 [`docs/A4000T-ONBOARD-710.md`](https://github.com/jusii/amix-a4091/blob/master/docs/A4000T-ONBOARD-710.md) §2 🟡.
+- The **A4000T `$DD0000` reading** (first-party record, 2026-09-24): the shipped 060 kernel's unstripped `autocon()` disassembly plus the stock `support.c`/`sd.c`/`a3091.c` — the load-address phantom at `0xDD0000` sorting as card 0; on an A4000T that window is the onboard NCR 53C710. The boot hang of a kernel without the chipset-gated probe on an A4000T + Z3660 (2 of 2 cold boots; first-party record, 2026-09-28) and the unterminated local-I/O cycle behind it (the Z3660 CPLD waits for `DSACK`/`AVEC`/`BERR` with no timeout): [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/drivers/a4091/` (formerly amix-a4091) [`docs/A4000T-ONBOARD-710.md`](https://github.com/amigaux/amix/blob/master/kernel/drivers/a4091/docs/A4000T-ONBOARD-710.md) §2 🟡.
+- [`amigaux/amix`](https://github.com/amigaux/amix) `docs/WHATS-NEW.md`, "1.1" (loadable modules on both lines, filesystems as modules), read 2026-11-20 ✅.

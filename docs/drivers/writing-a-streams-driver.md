@@ -174,7 +174,7 @@ The full client-side list (Style 1, the bind ack, `DL_UNITDATA_REQ`, a unit with
 
 ## Building the driver (natively on Amix)
 
-hydra is **source-only** and is **built natively on the Amix box — no cross-compiler** ✅. You still need a licensed Amix install (the repo ships no kernel headers/libs; until 2026-09-23 this project treated them as not redistributable — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary)), which is why no binaries ship. The driver `Makefile` uses the on-box compiler (`cc`/`ld -r`); the build is just:
+hydra is **source-only** and is **built natively on the Amix box — no cross-compiler** ✅. You need an Amix system to build on (the repo ships no kernel headers/libs; the stock ones are public in [`amigaux/amix-system`](https://github.com/amigaux/amix-system), which amix pins at `988b0f8` ✅; until 2026-09-23 this project treated them as not redistributable — see [`AGENTS.md` §5](https://github.com/amigaux/grimoire/blob/master/AGENTS.md#5-respect-the-licensing-boundary)), which is why no binaries ship. The driver `Makefile` uses the on-box compiler (`cc`/`ld -r`); the build is just:
 
 ```sh
 su
@@ -185,7 +185,7 @@ mknod /dev/hya0 c 47 0                        # create the device node
 
 The stock on-box compilers are the AT&T SVR4 `cc` and the Commodore-patched **GNU GCC 1.40.5** at `/usr/public/bin/gcc` ✅. hydra's own build names a native **GCC 2.7.2.3**, but its origin is unsourced — the "installable pkg on amigaunix.com" attribution has no source found, and no public source or package for a native 2.7.2.3 build is known 🔴 (see [the compiler table](toolchain.md#native-compilers-on-the-box)). The kernel-image / boot-relocatable conversion (`elf2brel`, the `boot/`/`stand/` tooling) is part of this on-box kernel build, not a separate cross step. For the relink mechanics see [Building and installing a kernel](kernel-build.md), and keep the old `/unix` as a fallback.
 
-> **Note:** hydra builds on-box (with a native GCC 2.7.2.3 of unsourced origin 🔴, or the stock `cc`/GCC 1.40.5). As of 2026-06 a Linux-hosted **cross-toolchain** also exists — [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix) (`m68k-cbm-sysv4-gcc`), which closes the earlier "no public cross recipe" gap ✅ — so you can build driver objects on a modern host too (it takes your licensed Amix tree as a sysroot). See the [toolchain page](toolchain.md) and the [licensing boundary](https://github.com/amigaux/grimoire/blob/master/AGENTS.md) (obtain Amix media via [amigaunix.com](https://www.amigaunix.com/doku.php/home) / archive.org, never by redistribution).
+> **Note:** hydra builds on-box (with a native GCC 2.7.2.3 of unsourced origin 🔴, or the stock `cc`/GCC 1.40.5). Since 2026-06 a Linux-hosted **cross-toolchain** also exists — [`isoriano1968/gcc-cross-amix`](https://github.com/isoriano1968/gcc-cross-amix) (`m68k-cbm-sysv4-gcc`), which closes the earlier "no public cross recipe" gap ✅ — so you can build driver objects on a modern host too. amix builds kernel space with the fork [`amigaux/gcc-cross-amix`](https://github.com/amigaux/gcc-cross-amix) (pinned at `33ebadc`) in its build container (`make tools`), with the public [`amigaux/amix-system`](https://github.com/amigaux/amix-system) as the sysroot ✅. See the [toolchain page](toolchain.md) and the [licensing boundary](https://github.com/amigaux/grimoire/blob/master/AGENTS.md) (obtain Amix media via [amigaunix.com](https://www.amigaunix.com/doku.php/home) / archive.org, never by redistribution).
 
 ## Checklist: adding a STREAMS net driver
 
@@ -218,3 +218,4 @@ Putting it together — the STREAMS-specific deltas on top of the generic [add-a
 - Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference — §5 of the brief (STREAMS = special char driver with a `streamtab`; `int2_tbl[]`; entry-point prefix convention).
 - `isoriano1968/hydra-amix` repo: <https://github.com/isoriano1968/hydra-amix>
 - amigaunix.com — historical and end-user reference: <https://www.amigaunix.com/doku.php/home>
+- [`amigaux/amix`](https://github.com/amigaux/amix) `toolchain/gcc-cross-amix.pin`, `toolchain/README.md` (the sysroot is the `usr/` tree of `amigaux/amix-system`), `system/amix-system.pin` and `docs/BUILDING.md` (`make tools`), read 2026-11-20 ✅.

@@ -86,12 +86,13 @@ Note what distinguishes the two: the character switch has the byte-stream and me
 | `cdevsw[]` | char **major** | one `struct cdevsw` per char driver | console (0), `par` (21), `hya` (47) |
 | `bdevsw[]` | block **major** | one `struct bdevsw` per block driver | `fd` (16), SCSI disk (18) |
 | `int2_tbl[]` | — | level-2 (INT2) **autovector** interrupt handlers | `parintr`, `a2090intr`, `a2091intr`, … |
-| `int6` table | — | level-6 autovector interrupt handlers | (exists; entries version-specific) |
-| `init_tbl[]` | — | one-shot **boot-time init** functions | `parinit`, `coinit`, … |
+| `init_tbl[]` | — | one-shot **boot-time init** of the kernel's subsystems | `fpuinit`, `cinit`, `binit`, `strinit`, … |
+| `io_init[]` | — | one-shot **boot-time init** of drivers | `parinit` |
+| `io_start[]`, `io_halt[]`, `io_poll[]` | — | driver start, halt and poll hooks | (empty in the stock file) |
 
-So a typical char driver touches three of these: a `cdevsw[]` slot at its major, an `int2_tbl[]` entry if it takes a level-2 interrupt, and an `init_tbl[]` entry if it needs boot-time setup. The parallel driver, for instance, contributes `cdevsw[21]`, `parintr` to `int2_tbl[]`, and `parinit` to `init_tbl[]` ✅.
+So a typical char driver touches three of these: a `cdevsw[]` slot at its major, an `int2_tbl[]` entry if it takes a level-2 interrupt, and an `io_init[]` entry if it needs boot-time setup. The parallel driver, for instance, contributes `cdevsw[21]`, `parintr` to `int2_tbl[]`, and `parinit` to `io_init[]` ✅.
 
-> **Note:** the exact array name for boot-time init varies between sources — the paper uses `init_tbl[]`; the modern [VA2000 case study](case-studies/va2000.md) patches an `io_init[]` array in its `kernel.c` ✅. Treat them as the same concept (a list of init functions called once at boot). The full original `master.d/kernel.c` is **not** publicly archived, so the precise schema is inferred from the paper plus the community repos 🔴.
+> **Note:** the Ditto paper speaks of `init_tbl[]` for boot-time init; the stock `master.d/kernel.c`, public in [`amigaux/amix-system`](https://github.com/amigaux/amix-system) (`usr/sys/master.d/kernel.c`), has two tables: `init_tbl[]` for the kernel's own subsystems and `io_init[]` for drivers, which is the one the [VA2000 case study](case-studies/va2000.md) patches ✅. The stock file has no level-6 interrupt table ✅; on amigaux 1.1 and later a module attaches its handler with `intr_attach` ([loadable modules](loadable-modules.md)).
 
 ### Placeholder entry points: nodev, notty, nostr, nullflag
 
@@ -243,3 +244,4 @@ The paper's end-to-end procedure ties the whole model together ✅. Full mechani
   post-fix vs corruption by cycle 2–10 pre-fix;
   mount-stacking reproduction; `mnttab` special-field A/B test. ✅
 - amigaunix.com — historical and end-user reference: <https://www.amigaunix.com/doku.php/home>
+- The stock `usr/sys/master.d/kernel.c` in [`amigaux/amix-system`](https://github.com/amigaux/amix-system) at `988b0f8` (the tables `init_tbl[]`, `int2_tbl[]`, `io_init[]`, `io_start[]`, `io_halt[]`, `io_poll[]`), read 2026-11-20 ✅.

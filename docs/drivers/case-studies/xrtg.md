@@ -6,7 +6,13 @@ status: draft
 
 # Case Study: xrtg-amix
 
-[`asokero/xrtg-amix`](https://github.com/asokero/xrtg-amix) is an **X11R5 X server** for Amix — its server binary is `Xrtg` — that renders into the MNT **VA2000** retargetable-graphics (RTG) card through the kernel framebuffer device `/dev/va2000` ✅. It runs **TrueColor RGB565** at resolutions from 640×480 up to **1920×1080**, uses the card's hardware blitter for fills and copies, and draws a software cursor ✅. It targets Amix **2.1p2a** on an Amiga 3000 / 68030 / Zorro II, and it **requires the [`va2000-amix` framebuffer driver](va2000.md) to be in the kernel first** — `Xrtg` is a userspace consumer of `/dev/va2000`, not a driver itself ✅.
+[`asokero/xrtg-amix`](https://github.com/asokero/xrtg-amix) is an **X11R5 X server** for Amix — its server binary is `Xrtg` — that renders into the MNT **VA2000** retargetable-graphics (RTG) card through the kernel framebuffer device `/dev/va2000` ✅. It runs **TrueColor RGB565** at resolutions from 640×480 up to **1920×1080**, uses the card's hardware blitter for fills and copies, and draws a software cursor ✅. It targets Amix **2.1p2a** on an Amiga 3000: a 68030 with the VA2000 in Zorro II, or a 68040/68060 kernel with the card in Zorro III, one binary serving both ✅. It **requires the [`va2000-amix` framebuffer driver](va2000.md) to be in the kernel first** — `Xrtg` is a userspace consumer of `/dev/va2000`, not a driver itself ✅.
+
+> **Two servers named `Xrtg`.** The `Xrtg` Amix ships today is the X11R6.3 server of the `x11r63`
+> package ([`userland/packages/x11r6.3`](https://github.com/amigaux/amix/tree/master/userland/packages/x11r6.3)).
+> It carries this project's VA2000 driver, taken from the [`amigaux/xrtg-amix`](https://github.com/amigaux/xrtg-amix)
+> fork at a pinned commit and ported to its card record, and drives the card with `Xrtg -card va2000`
+> ✅. This page covers the original X11R5 server.
 
 This page is the development-side companion to [X11 & the desktop](../../how-it-works/x11-and-desktop.md) (the user-facing X overview) and [X11 / RTG driver development](../x11-rtg-drivers.md) (the general DDX/RTG layering). The facts here are **uniformly ✅** (from the repo README/source, via [research brief §6](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md)) except where a tag says otherwise.
 
@@ -27,7 +33,7 @@ This page is the development-side companion to [X11 & the desktop](../../how-it-
 | Underlying device | `/dev/va2000` (char **major 68 minor 0**) | ✅ |
 | Hard dependency | [`va2000-amix` driver](va2000.md) installed in the kernel | ✅ |
 | Build system | X11R5 **imake** + custom `config/amix.cf` | ✅ |
-| Target platform | Amix **2.1p2a**, A3000 / 68030, Zorro II | ✅ |
+| Target platform | Amix **2.1p2a**, A3000: 68030 (Zorro II) or 68040/68060 (Zorro III) | ✅ |
 | Distribution | **source-only** (links against a licensed Amix SVR4 env) | ✅ |
 | License (new code) | **MIT** | ✅ |
 | License (X11R5 portions) | original **X Consortium** terms | ✅ |
@@ -124,4 +130,6 @@ The original Amix color X path is the **A2410** "Lowell" TIGA board driven by `o
 - [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §6 — `asokero/va2000-amix`: `/dev/va2000` char major 68 minor 0, 16-bit modes, console screen-type patches the screen manager relies on.
 - [`asokero/xrtg-amix`](https://github.com/asokero/xrtg-amix) — the X11R5 `Xrtg` server source (DDX `ddx/amix/`, RTG layer, VA2000 backend, `config/amix.cf`).
 - [`asokero/va2000-amix`](https://github.com/asokero/va2000-amix) — the framebuffer driver the server sits on.
+- `asokero/xrtg-amix` `README.md` on `main` (tested on 68030, 68040 and 68060; the VA2000 in Zorro II and Zorro III; one binary for both), read 2026-11-20.
+- amix `userland/packages/x11r6.3/package.sh` (`FORKDIRS`: `x11r6.3/hw/amix/rtg/va2000`), `xrtg-amix.pin` (`amigaux/xrtg-amix` `552968e`) and `kernel/drivers/va2000/README.md` (`Xrtg -card va2000`, x11r63 6.3-10 or later), read 2026-11-20. ✅
 - [amigaunix.com — X11](https://www.amigaunix.com/doku.php/x11) — community reference for the historical X stack the RTG path replaces (🟡).

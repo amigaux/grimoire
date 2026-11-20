@@ -19,7 +19,8 @@ physical **Amiga 4000 + Z3660** during 2026-06. Unless noted, every claim here i
 (driver source we wrote, firmware source we read, or a result reproduced live on the hardware);
 inferences and unconfirmed items are tagged 🟡 inline, carried verbatim from the source brief per the
 repo's [confidence-tag policy](https://github.com/amigaux/grimoire/blob/master/AGENTS.md). The
-source is the **amix-z3660net** project — `src/z3660eth.{c,h}`, `driver.conf`, `userland/S99zen`,
+source is amix [`kernel/drivers/z3660eth`](https://github.com/amigaux/amix/tree/master/kernel/drivers/z3660eth)
+(formerly the **amix-z3660net** project) — `src/z3660eth.{c,h}`, `driver.conf`, `link.d/z3660eth`,
 its `docs/ETHERNET-SCOPING.md` — and the Z3660 firmware source.
 
 > **One-line summary.** Amix now has full TCP/IP over a native SVR4 STREAMS/DLPI driver (`zen0`) for
@@ -145,7 +146,7 @@ a large-memory machine was the wrong trade, and now uses the windows directly �
 
 ## Driver architecture
 
-`src/z3660eth.c` is a STREAMS/DLPI skeleton of about 1,650 lines adapted from the stock Amix `aen`
+`src/z3660eth.c` is a STREAMS/DLPI driver of about 2,400 lines (about 1,650 in the first versions) adapted from the stock Amix `aen`
 (LANCE) and `hydra` drivers, with the chip layer replaced by the Z3660 mailbox ✅.
 
 ### Function map (all in `src/z3660eth.c`)
@@ -188,6 +189,11 @@ a large-memory machine was the wrong trade, and now uses the windows directly �
 
 ## Kernel integration
 
+On amigaux 1.1.x, install the `z3660eth-k30` or `z3660eth-k46` module package with `apkg` instead ✅.
+It ships the boot-class module, `/etc/inet/link.d/z3660eth` and `/dev/zen0` (char 51, 0); on a module
+kernel the major comes from the module registry (`kbootset major z3660eth`). The edits below are the
+static-kernel route.
+
 A STREAMS network driver is **not** registered in `sd.c`'s `scsicard[]` table (that is the SCSI-stack
 path the [A4091 driver](a4091-53c710-driver.md#the-card-registry-in-sdc) uses) — it is wired directly
 into `master.d/kernel.c`'s `cdevsw[]` and built in its own `amiga/driver/<dir>/` subtree. Three edits
@@ -199,9 +205,9 @@ plus the subtree ✅:
    `nostr` with `&z3660ethinfo`.
 3. **`amiga/driver/Makefile`:** add `z3660eth/exp` to `OBJ` and a `z3660eth/exp:` build rule.
 
-The machine-readable form is `driver.conf`, consumed by the **amix-kerntools** `amix-build` tool,
+The machine-readable form is `driver.conf`, consumed by amix's `kernel/k30` build hub (`amix-build`),
 which parses the `net <subdir> <src> <streamtab> <major> <iface>` stanza and stages the driver; the
-on-box half is `tools/onbox-build.sh` and the gate `tools/build-clean-net-kernel.sh` ✅:
+on-box half is `kernel/k30/tools/onbox-build.sh` and the gate `kernel/k30/tools/build-clean-net-kernel.sh` ✅:
 
 ```text
 net  z3660eth  z3660eth.c  z3660ethinfo  51  zen  "Z3660 Ethernet"
@@ -235,7 +241,7 @@ firmware raises **Amiga INT6 (EXTER)** on *every* received frame — `rtg/rtg.c`
 traffic storms INT6 and instantly hard-locks the machine** ✅. (Exactly the INT6 risk the scoping doc
 had flagged in Phase 0.)
 
-**Fix** (commit `028c8d2`): the driver writes **`ZZ_CONFIG_DISABLE` (0)** instead of
+**Fix** (commit `a0bb98c`, formerly `028c8d2`): the driver writes **`ZZ_CONFIG_DISABLE` (0)** instead of
 `ZZ_CONFIG_ENABLE` (1), so the firmware never raises INT6. RX is unaffected — the firmware still fills
 the backlog ring regardless of the interrupt-enable flag (`ethernet.c` only gates a *debug print* on
 it), so the **bounded poll/drain callout keeps working**. **No firmware change was needed** ✅.
@@ -312,7 +318,7 @@ and [the kernel-build page](kernel-build.md) describe.
   kernel is **both** `nm -u`-clean **and** `checkunix`-clean, then `ln`s it to `relocunix`. (A
   recurring `sum -r` among clean builds is gold confirmation but does not converge on this larger
   kernel and is not required.)
-- Implemented in the amix-kerntools `tools/build-clean-net-kernel.sh`.
+- Implemented in amix's `kernel/k30/tools/build-clean-net-kernel.sh`.
 
 > ⚠️ **Never delete the 22 generic SVR4 `exp` blobs** (os, io, netinet, rpc, vm, …): they ship
 > pre-linked with no source on the box and are not regenerable. Only the `amiga/` tree + `master.d` +
@@ -381,10 +387,16 @@ produces *no* console output during boot, which reads convincingly like "the sta
 ran". Run `/usr/amiga/bin/aen -S; echo $?` by hand: a return of `1` is the board probe failing, and
 `netstat -in` will show `aen0` with address and network `none`.
 
-### Boot auto-bring-up — `/etc/rc2.d/S99zen`
+### Boot auto-bring-up — `/etc/rc2.d/S99zen` (until 2026-10-31)
 
-The amix-z3660net repo ships `userland/S99zen` (installed as `/etc/rc2.d/S99zen`). It is
-**backgrounded** so a datapath problem can never hang the boot (the box still reaches `login:`), and
+**Today** `zen0` comes up through the network set-up every interface shares (amix-base): one line in
+`/etc/inet/interfaces`, such as `zen0 static 192.0.2.39/24 gw 192.0.2.1` or `zen0 dhcp`. `ifup`, run by
+`inetinit` at boot, finds the driver through the package's `/etc/inet/link.d/z3660eth`, makes
+`/dev/zen0` if it is missing and links it under IP and ARP (`interfaces(4)`, `link.d(4)`) ✅. The
+driver dropped `S99zen` and `network-config.zen` on 2026-10-31.
+
+Until then the driver shipped `userland/S99zen` (installed as `/etc/rc2.d/S99zen`). It was
+**backgrounded** so a datapath problem could never hang the boot (the box still reached `login:`), and
 **hardened** for the bring-up race above ✅:
 
 ```sh
@@ -421,9 +433,9 @@ acknowledgements leave from inside the drain, so the sender's next burst also wa
 
 **What happens when IP refuses** differs by version:
 
-- **Published driver** (`amix-z3660net` `master`): the frame is freed and counted in `couldnt_put`.
+- **Before back-pressure** (the 1.0-era driver): the frame is freed and counted in `couldnt_put`.
   Its firmware slot is already released, so the frame is gone.
-- **Back-pressure version** (first-party, 2026-10-20; not yet published): the drain stops and leaves
+- **Back-pressure** (first-party, 2026-10-20; in amix `kernel/drivers/z3660eth`): the drain stops and leaves
   that frame, and everything behind it, in the firmware backlog. The failed `canput()` marks IP's
   queue `QWANTW`. When IP drains, STREAMS back-enables the driver's new read service procedure
   `z3660ethrsrv`, which resumes the drain, usually within the same tick. Two bounds keep a stuck
@@ -442,7 +454,7 @@ driver is the worst case for that limit, because it batches by construction.
 
 | Fixes in place | Push | Retransmissions | Pull |
 |---|---|---|---|
-| none (stock kernel, published driver, 1.0 firmware) | 22–31 KB/s | 319–392 | ~600 KB/s |
+| none (stock kernel, 1.0-era driver, 1.0 firmware) | 22–31 KB/s | 319–392 | ~600 KB/s |
 | kernel's TCP queue raised to 16 KB | 120–126 KB/s | 109–119 | ~575 KB/s |
 | + driver back-pressure | 227–334 KB/s | 10–46 | 570–640 KB/s |
 | + firmware receive ring (PR #33 build) | 314–372 KB/s | 0–8 | 560–650 KB/s |
@@ -478,11 +490,11 @@ Validated on a real **A4000 + Z3660**, all reproduced live ✅:
   separate known issue), so a dirty root can panic before reaching the bring-up. When the boot is
   clean, networking comes up. Always prefer **clean shutdowns** (`shutdown -i0`; verify the network
   drops, i.e. the FS unmounted) before power-cycling.
-- 🟡 **Auto-bring-up race** — mitigated by the hardened `S99zen`, not yet stress-tested across many
-  cold boots.
+- 🟡 **Auto-bring-up race** — mitigated by the hardened `S99zen` (since replaced by `ifup`, above),
+  not stress-tested across many cold boots.
 - ✅ **Interrupt-driven RX exists in the 1.1 module form.** The static driver polls. The loadable
-  module (1.1, in development) can attach an INT6 receive path through the module core's interrupt
-  service: the level-6 handler only acknowledges and flags, and the drain runs at level 2. On real
+  module (shipped since 1.1 as the `z3660eth-k30`/`z3660eth-k46` packages) can attach an INT6 receive
+  path (module parameter `intr=6`) through the module core's interrupt service: the level-6 handler only acknowledges and flags, and the drain runs at level 2. On real
   hardware (A4000D, 68LC060) it held 3 × 2000 pings at 5 ms with 0 % loss and a 1.2–1.4 ms round trip,
   against 11.6 ms polled, and pushed 418–489 KiB/s ✅ (2026-10-26). Polled stays the default.
 - ✅ **Arm every register access against the address-capture race.** The
@@ -524,31 +536,33 @@ Validated on a real **A4000 + Z3660**, all reproduced live ✅:
 ## Sources
 
 - The **`ZZ_ETH_MAC_HI` read before load** (first-party record, 2026-11-02) ✅/🟡 — the amix `kernel/dlm` `bprobe` test modules' word read of `0x10000198` on an A4000D with a Z3660 (real 68LC060), root and boot passes; the test module now reading a long (`3bdf89d`, on `master`). The register read handler, the MAC set-up, `FW_VERSION` and the `ext_kickstart` condition from the Z3660 fork's firmware source ([jusii/Z3660-amix](https://github.com/jusii/Z3660-amix); `rtg/rtg.c`; `aab97b5`, on `core1-runtime`) ✅ ([`amigaux/amix`](https://github.com/amigaux/amix) `kernel/dlm/tests/bench/bprobe/`, (`51dd57a`, on `master`)).
-- **Driver source we wrote** (primary, ✅): the **amix-z3660net** project
-  (<https://github.com/jusii/amix-z3660net>, branch `master`) — `src/z3660eth.c` (about 1,650 lines;
+- **Driver source we wrote** (primary, ✅): amix
+  [`kernel/drivers/z3660eth`](https://github.com/amigaux/amix/tree/master/kernel/drivers/z3660eth)
+  (formerly jusii/amix-z3660net; old hashes resolve through its `docs/history-map.txt`) — `src/z3660eth.c` (about 2,440 lines on `master`, 2026-11-20;
   the MAPPING STRATEGY note and `z3660eth_direct_map`), `src/z3660eth.h` (register map, frame-window
   layout, `splz3660eth()` = `spl6()` via `sys/inline.h`), `src/z3660ethuser.h`, `src/Makefile`, `driver.conf` (the `net z3660eth … 51 zen` stanza; 48 until the 2026-07-30 renumber),
-  `userland/S99zen` (boot auto-bring-up), `userland/{bringup.sh,network-config.zen,zen.c}`,
+  `userland/{bringup.sh,zen.c}` (`userland/S99zen` and `network-config.zen` until 2026-10-31, commit `f0385cb`), `link.d/z3660eth`,
   `README.md`, `BUILD.md`, `CHANGELOG.md` (2026-08-24: the run-time `z3660eth_cache` gate replacing
-  `Z3660ETH_CACHE_FLUSH`; 2026-09-27: interrupt masking made real); commits `f4f64f7` (initial
-  STREAMS/DLPI driver), `a164bb9` (on-box integration scripts), `9d12f3b` (Phase-1 gate: the
-  `rico.h`-isms, and `spl6`/`splx` no-opped — corrected 2026-09-27), `028c8d2` (**do not enable
-  firmware INT6** — the storm fix), `88425eb` (validated on real HW; hardened `S99zen` + README
+  `Z3660ETH_CACHE_FLUSH`; 2026-09-27: interrupt masking made real); commits `7694c2d` (formerly `f4f64f7`; initial
+  STREAMS/DLPI driver), `81e355b` (formerly `a164bb9`; on-box integration scripts), `c093569` (formerly `9d12f3b`; Phase-1 gate: the
+  `rico.h`-isms, and `spl6`/`splx` no-opped — corrected 2026-09-27), `a0bb98c` (formerly `028c8d2`; **do not enable
+  firmware INT6** — the storm fix), `fdee142` (formerly `88425eb`; validated on real HW; hardened `S99zen` + README
   real-HW status).
+- amix `kernel/drivers/z3660eth/README.md` (configuring `zen0` through `/etc/inet/interfaces`, `link.d`, `kbootset major z3660eth`), `module/Master` (`$class boot`, `$majors c:51`, `$param intr`), `module/VERSION` (1.0.0-7), `pkg/pkginfo.k30` + `pkginfo.k46` (1.0.0-13), `pkg/prototype` (`/etc/inet/link.d/z3660eth`, `/dev/zen0` c 51 0) and `src/z3660eth.c` (`z3660ethrsrv`), read 2026-11-20 ✅.
 - **Firmware source we read** (primary, ✅): the Z3660 firmware fork
   (<https://github.com/jusii/Z3660-amix>) `z3660-firmware/Z-TURN/vitis_ide/Z3660/src/` — `rtg/rtg.c`
   (`REG_ZZ_CONFIG` / `REG_ZZ_ETH_TX` / `REG_ZZ_ETH_RX` dispatch, the INT6 raise), `ethernet.c`,
   `memorymap.h`, `rtg/zzregs.h`. The body's line numbers are on the `amix-main` branch; on
   `release-1.0` (the 1.0 source) `rtg.c` has `REG_ZZ_CONFIG` at 1111, the INT6 enable at 1127, the
   ETH raise at 329 and the `REG_ZZ_ETH_TX` / `REG_ZZ_ETH_RX` dispatch at 1570 / 1574.
-- **Design / scoping** (primary, ✅): amix-z3660net `docs/ETHERNET-SCOPING.md` and
+- **Design / scoping** (primary, ✅): amix `kernel/drivers/z3660eth/docs/ETHERNET-SCOPING.md` and
   `docs/ETHERNET-SCOPING-evidence.md` (the protocol contract, cache-coherency analysis, the INT6
   risk, the phased plan).
 - **Real-hardware results reproduced live** (2026-06-21, A4000 + Z3660, ✅): `ifconfig zen0`,
   `netstat -in`, laptop↔box `ping` / `ftp`, and firmware serial `[ETHCFG]` / `[ETHTX]` debug
   breadcrumbs (a temporary `rtg.c` build, since reverted).
-- **Kernel build tooling** (✅): the **amix-kerntools** project
-  (<https://github.com/jusii/amix-kerntools>) — `amix-build` (parses the `driver.conf` `net` stanza
+- **Kernel build tooling** (✅): amix's `kernel/k30` build hub
+  (<https://github.com/amigaux/amix/tree/master/kernel/k30>, formerly jusii/amix-kerntools) — `amix-build` (parses the `driver.conf` `net` stanza
   and assembles the bundle), `tools/onbox-build.sh` (the on-box half), `tools/build-clean-net-kernel.sh`
   (the `nm -u` clean-gate).
 - **The RAM-ceiling investigation** (first-party record, 2026-08-12/14): the ">80 MB board not found" root cause —
@@ -571,11 +585,11 @@ Validated on a real **A4000 + Z3660**, all reproduced live ✅:
   SCSI drivers), read with `adb -k` against the on-box native-linked kernel; and the byte-vs-int
   `adb` format trap that makes a set flag print as `16777216`.
 - **The October 2026 receive-path work** (first-party record, 2026-10-19 to 2026-10-21) ✅: the
-  stamped transmit/receive profile on a real 68060, the back-pressure version of the drain (not yet
-  in the public repository; its design notes describe the hold, the `z3660ethrsrv` resume and the
+  stamped transmit/receive profile on a real 68060, the back-pressure version of the drain (now in
+  amix `kernel/drivers/z3660eth`; its design notes describe the hold, the `z3660ethrsrv` resume and the
   24-slot / 30-tick bounds), and the push/pull rows on two A4000-class machines. The firmware side
   is cited on [Z3660 ethernet](../how-it-works/z3660-ethernet.md#sources).
 - Magic numbers (✅): cdevsw major **51** (48 until 2026-07-30); board autocon `0x144B0001`; fixed combo base `0x10000000`;
   iface `zen0` @ `192.0.2.39`; build box `192.0.2.38`; TFTP `192.0.2.29`; station MAC
   `00:80:51:01:02:03`.
-- The INT6 receive rows and the address-capture arming (first-party record, 2026-10-26) ✅: `amix-z3660net` CHANGELOG 1.0.0-5 (every board register access armed); the A4000D module rows (polled and INT6 pings, the 4 MiB FTP throughput transfers).
+- The INT6 receive rows and the address-capture arming (first-party record, 2026-10-26) ✅: amix `kernel/drivers/z3660eth/CHANGELOG.md`, 2026-10-26, module 1.0.0-5 (every board register access armed); the A4000D module rows (polled and INT6 pings, the 4 MiB FTP throughput transfers).

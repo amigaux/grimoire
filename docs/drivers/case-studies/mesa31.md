@@ -21,7 +21,7 @@ stage — the static libraries and demos are the first milestone, not a finished
 | Repo | [`github.com/isoriano1968/mesa-amix`](https://github.com/isoriano1968/mesa-amix) | ✅ |
 | Mesa version | **3.1** (`MesaLib-3.1` + `MesaDemos-3.1` from the official Mesa archive) | ✅ |
 | Rendering | **Xlib software driver** — client-side; no GLX server extension needed | ✅ |
-| Display target | [`Xzz9000`](x11r63-zz9000.md) (16-bit TrueColor), headers/libs from `/usr/x11r6` | ✅ |
+| Display target | [`Xzz9000`](x11r63-zz9000.md) of X11R6.3 (16-bit TrueColor), headers/libs from isoriano's `/usr/x11r6` tree. The x11r63 package Amix ships installs `Xzz9000` as a link to its `Xrtg` server, under `/opt/amix/X11R6`, with static libraries | ✅ |
 | Compiler | GCC 2.7.2.3; `-O -ansi -finline-functions -DAMIX -Dm68k -DSVR4` | ✅ |
 | First milestone | **static** `libGL.a` / `libGLU.a` / `libglut.a` + `xdemos`; then selected GLUT demos (`gears`, `bounce`, `glutmech`) before any shared-library work | ✅ |
 | Excluded (for now) | MIT-SHM, threads, CPU assembly, DRI, server-side GLX, ZZ9000 HW accel, shared libs | ✅ |
@@ -111,4 +111,5 @@ build-host paths — read it as a personal layout, not a convention ✅.
 
 - [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §21 — `isoriano1968/mesa-amix` @ `78fe054` (2026-07-03).
 - [`isoriano1968/mesa-amix`](https://github.com/isoriano1968/mesa-amix) — `README.md`, `PORTING.md`, `install.sh` + `SOURCES.sha256`, `config/Make-config.amix`, `overlay/Mesa-3.1/amix-build.sh`.
+- amix `userland/packages/x11r6.3/package.sh` (`DESC`: `/opt/amix/X11R6`, `Xrtg` also installed as `Xzz9000` and `X`, static libraries), read 2026-11-20.
 - [Mesa 3.x archive](https://archive.mesa3d.org/older-versions/3.x/) — the pristine upstream sources `install.sh` fetches.

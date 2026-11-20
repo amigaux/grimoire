@@ -14,8 +14,8 @@ because it reads physical memory through `/dev/mem`, and it works by decoding th
 in userspace and touches no driver code, which makes it the easiest way to confirm *what hardware Amix
 can actually see* before you start writing a driver for it.
 
-Repo: <https://github.com/asokero/lszorro-amix>. ✅ Like the other modern case studies, it targets
-**Amix 2.1p2a on an Amiga 3000 (68030), Zorro II only.**
+Repo: <https://github.com/asokero/lszorro-amix>. ✅ It was written for
+**Amix 2.1p2a on an Amiga 3000 (68030)**, and it scans **Zorro II space only**.
 
 ## What it is for
 

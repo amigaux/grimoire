@@ -284,6 +284,8 @@ emulation, loopback TCP unless said, 2026-11-06 ✅:
 | `select` for write | writable even when the room is smaller than the next message (at 16064 bytes queued a 2008-byte `write` got `EAGAIN`) | on `EAGAIN` after a writable `select`, wait a little before retrying instead of spinning |
 | `write(2)` on a socket | behaves as `send`: one datagram on a connected UDP socket; against a peer that closed, the first `write` or `send` succeeds, later ones give `EPIPE` (32) and raise `SIGPIPE` | as on any Unix |
 | `select`, `poll`, `FIONREAD`, `I_NREAD` | right: every arrival reported, all bytes delivered, `FIONREAD` (`0x4004667f`) and `I_NREAD` agree | rely on them |
+| `poll` after `shutdown(fd, 1)` | `POLLERR` at once, every time; `FIONREAD`/`I_NREAD` fail; a non-blocking read gives `EAGAIN` (68040/68060 line, 2026-11-07) | read non-blocking with short naps, bounded by `time()` ([quirk 103](quirks.md#103-half-close-pollerr)) |
+| `close` with data the peer has not acknowledged | dropped (no `SO_LINGER`) | `shutdown(fd, 1)`, read to EOF with a time bound, then `close` ([quirk 103](quirks.md#103-half-close-pollerr)) |
 
 ## NFS (server and client)
 
@@ -622,7 +624,8 @@ The stock `in.ftpd` can deliver a **passive** (`PASV`) download **short** — a 
 still reply `226 Transfer complete`; active (`PORT`) mode was clean in every bench run (2026-10-02:
 passive from `cdfs` 18/80 short, passive from UFS 0/80, active 0/40) ✅. The server has no `SIZE`
 command, so a client must length-gate each `GET` against `LIST`/`ls -l` itself. **Use active mode
-for anything you will checksum.** Details: [quirks §64](quirks.md#64-ftpd-passive-truncation).
+for anything you will checksum.** The cause is the server's close dropping unacknowledged data, and
+amigaux 1.1's `ftpdfix` package fixes it ✅. Details: [quirks §64](quirks.md#64-ftpd-passive-truncation).
 
 ## Serial networking: SLIP is buggy, no PPP
 

@@ -745,3 +745,9 @@ rows) are cited in plain words; their hosts and run numbers are project bookkeep
   `ENOPROTOOPT`, `SO_TYPE` works; `recvfrom` with a NULL address faults; `select` reports writable with less room
   than the next message; `write(2)` behaves as `send`; `select`/`poll`/`FIONREAD`/`I_NREAD` are right ✅. amix pth
   patches 0005/0006. Quirks 101 and 102, networking's porting section.
+- **2026-11-07 — Half-closing a TCP socket.** After `shutdown(fd, 1)`, `poll` reports `POLLERR` at once, every time;
+  `FIONREAD`/`I_NREAD` fail and a non-blocking read gives `EAGAIN`; a blocking read sleeps until the peer closes ✅.
+  libsocket's `shutdown` is one `I_STR` `SI_SHUTDOWN` (0x4966) ioctl to sockmod ✅. Half-close, read non-blocking to
+  EOF with a `time()` bound, then close loses nothing: 8 MiB passive downloads short 10/20 from the stock `in.ftpd`,
+  0/20 patched ✅ (k46 68060-261106-66, emulation; not measured on k30). `poll(NULL, 0, 50)` took 67 ms ✅ (one
+  sample). amix `userland/packages/ftpdfix` (in 1.1). Quirk 103; quirk 64's cause and fix.

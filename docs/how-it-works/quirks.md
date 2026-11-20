@@ -115,6 +115,7 @@ Each item is one line: what it is, the ✅/🟡 confidence tag carried from the 
 | 100 | **A whole-page UFS write that does not start an 8 KiB block leaves that block's first pages holding old memory in the page cache** — stock ufs `rwip` creates the pages at the window's base, not where the write starts; reads then return an earlier block, zeros or another file's data until the pages are evicted, while the disk is right. Fixed in the amigaux kernels (68030-261106-73 and 68060-261106-65 on) | ✅ | [Quirks §100](#100-ufs-rwip-pagecreate) |
 | 101 | **A non-blocking `send` that meets less room than it asked for counts every byte as sent and drops the rest** — stock libsocket subtracts each slice it asked to write, not what the write took; with no room at all `send` fails with `ENOMEM`, not `EAGAIN`. `write(2)` on the same socket counts right. Use `write` when no flags are needed | ✅ | [Quirks §101](#101-libsocket-send-drops) |
 | 102 | **One `recv(MSG_PEEK)` on a listening socket breaks every later `accept` on it** — the peek gives `ENOTCONN`, then each `accept` gives `EINVAL` without asking the kernel. `poll`/`select` on a listener are harmless; a hang-up check that peeks every readable descriptor is not | ✅ | [Quirks §102](#102-peek-breaks-accept) |
+| 103 | **After `shutdown(fd, 1)`, `poll` on that socket reports `POLLERR` at once, every time** — so neither `poll` nor `select` can wait for the peer's FIN after a half-close; `FIONREAD` and `I_NREAD` fail and a non-blocking read gives `EAGAIN`. Read non-blocking in a loop of short naps bounded by `time()` | ✅ | [Quirks §103](#103-half-close-pollerr) |
 
 The rest of this page expands each item.
 
@@ -482,13 +483,22 @@ still answers `226 Transfer complete` ✅. Measured on the bench, 2026-10-02: pa
 from UFS 0 in 80; **active (`PORT`) mode 0 in 40**; and a single 8 KiB `read()` of the same file was
 whole every time ✅. A slow source (such as `cdfs`) is the timing trigger, not the cause. The server
 appears to ignore a short socket write on the passive data socket and to set no linger or send-buffer
-options on it 🟡 (diagnosis from the behaviour, not yet from the server's code). An earlier 68030
+options on it 🟡 (an early guess from the behaviour; the cause found later is below). An earlier 68030
 bench measurement saw 57–64 % of 1.4 MB `GET`s come back short ✅ (its FTP mode not recorded).
 
 Because the truncation is always a byte-exact **prefix**, the file looks fine and only a checksum
 disagrees. And because this `ftpd` implements no `SIZE` command, a client cannot ask for the length
 up front. **Workarounds:** use **active (`PORT`) mode**, and length-gate every `GET` against the size
 `LIST`/`ls -l` reports, retrying on a mismatch ✅.
+
+**The cause and the fix** ✅. The stock close without `SO_LINGER` drops what the peer has not yet
+acknowledged, and the server closes the data connection straight after its last write. A server that
+half-closes (`shutdown(fd, 1)`), reads until the client's EOF and only then closes loses nothing:
+passive-mode 8 MiB downloads at MSS 1360 came back short 10 times in 20 from the stock server and 0 in 20
+from one patched that way (active mode 0 in 20 for both), on the 68040/68060 kernel in emulation,
+2026-11-07. amigaux 1.1 ships that fix as the `ftpdfix` package: the stock `in.ftpd` with 230 bytes
+changed, waiting at most 60 s for the client ✅ (amix `userland/packages/ftpdfix`). Why the wait cannot
+be a `poll`: [quirk 103](#103-half-close-pollerr).
 
 ### 72. A local `AF_UNIX` stream socket can deliver stale data under memory pressure 🟡 {#72-af-unix-memory-pressure}
 
@@ -563,6 +573,25 @@ A program that peeks every readable descriptor to detect a hang-up breaks its li
 Pth's `poll` did, so Python's `accept` after `poll`, or with a timeout set, failed with `EINVAL` ✅. A
 listener cannot be told apart to skip it, because `getsockopt(SO_ACCEPTCONN)` gives `ENOPROTOOPT`
 ([networking](networking.md#porting-socket-code-to-the-stock-libsocket)), so leave the peek out on Amix.
+
+### 103. After a half-close, `poll` reports `POLLERR` at once: the peer's FIN cannot be waited for ✅ {#103-half-close-pollerr}
+
+Measured with GCC 14 probes against the stock `libsocket`/`libnsl` only, and with the stock `in.ftpd`, on
+the 2.1c userland in emulation, 68040/68060 kernel line, the peer a Linux host, 2026-11-07 (not measured
+on the 68030 line) ✅. After 64 KiB written and `shutdown(fd, 1)`, four `poll(POLLIN, 15000)` calls in a
+row each returned 1 at once with `revents` `POLLERR` (0x8); `FIONREAD` and `I_NREAD` failed (−1), and a
+read with `O_NONBLOCK` gave −1 `EAGAIN` (11). A blocking `read` sleeps until the peer closes ✅.
+
+libsocket's `shutdown` is one STREAMS ioctl to `sockmod`: `I_STR` with `SI_SHUTDOWN` (`('I'<<8)|102`,
+0x4966) and the `how` value, plus libsocket's own state bits; the bare ioctl behaves the same ✅
+(disassembly), so a binary that does not import `shutdown` can make the call itself, as `ftpdfix` does.
+
+**Porting rule** ✅: a server that writes and then closes should `shutdown(fd, 1)`, read non-blocking
+until it gets 0 with a time bound, then `close`; not `SO_LINGER` with a time. Nap between reads with
+`poll(NULL, 0, ms)`, and bound the loop by `time()`, not by a round count: the nap is rounded up to clock
+ticks (50 ms asked, 67 ms taken in one sample), so 1126 rounds of a 50 ms nap took 75 s. A client that
+closes at EOF ended the wait in 83 ms; one that held its side 75 s ended it when it closed ✅. The stock
+FTP server's short downloads were this case ([quirk 64](#64-ftpd-passive-truncation)).
 
 ## FPU & floating-point quirks
 
@@ -2228,3 +2257,8 @@ platform not declared `SystemV` vfork (`HasVFork YES`), so an SVR4 cf file must 
   against the stock `libsocket`/`libnsl` only, on the 2.1c userland in emulation, k46 kernel 68060-261103-62
   (and the k30 line for quirk 102); disassembly of `libsocket.so`'s `_s_sosend`; amix `userland/packages/pth`
   `README.md` and patches 0005 and 0006 (pth 2.0.7-3).
+- **Quirk 103, and the cause and fix in quirk 64** (first-party record, 2026-11-07) ✅: probes `shutdown` and
+  half-close with the stock `libsocket`/`libnsl` and the stock `in.ftpd`, 2.1c userland in emulation, k46 kernel
+  68060-261106-66, A2065 on a host tap, the peer a Linux host; disassembly of `libsocket.so`'s `shutdown`; amix
+  `userland/packages/ftpdfix` (`README.md`, `build.sh`, `package.sh`; ftpdfix 2.1-1) and amix
+  `media/docs/releases/1.1.md`.

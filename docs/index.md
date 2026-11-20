@@ -8,8 +8,8 @@ status: reviewed
 
 Documentation for **Amiga Unix (Amix)** — Commodore's port of AT&T System V Release 4 (SVR4) to
 68030 Amigas. A community [68040/68060 port](how-it-works/68040-68060-status.md) extends it, and the
-[amigaux 1.0](https://amigaux.org/install/) release ships Amix 2.1 for 68060 Amigas with a Z3660
-accelerator, beside a classic 68030 kit ✅. Written for **both humans and LLM agents**: every page
+[amigaux](https://amigaux.org/install/) releases (1.0, then 1.1; 1.1.2 is current) ship Amix 2.1
+for 68030 and 68040/68060 Amigas, installed from packages and updated in place with `apkg` ✅. Written for **both humans and LLM agents**: every page
 is plain Markdown with stable headings, exact commands, and inline source-confidence tags
 (✅ verified · 🟡 community-reported · 🔴 unverified/disputed).
 
@@ -98,7 +98,7 @@ Case studies: [va2000](drivers/case-studies/va2000.md) ·
 [lszorro](drivers/case-studies/lszorro.md) ·
 [hydra](drivers/case-studies/hydra.md) ·
 [zz9000](drivers/case-studies/zz9000.md) ·
-[x11r6.3 (Xzz9000)](drivers/case-studies/x11r63-zz9000.md) ·
+[x11r6.3 (Xzz9000, now Xrtg)](drivers/case-studies/x11r63-zz9000.md) ·
 [mesa 3.1](drivers/case-studies/mesa31.md) ·
 [A4091 / 53C710 SCSI](drivers/a4091-53c710-driver.md) ·
 [Z3660 ethernet (zen0)](drivers/z3660-ethernet-driver.md) ·
@@ -126,4 +126,5 @@ Case studies: [va2000](drivers/case-studies/va2000.md) ·
 ## Sources
 - [`../sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) (grounding synthesis with citations)
 - [amigaunix.com](https://www.amigaunix.com/doku.php/home) (cross-linked community wiki)
-- [amigaux.org Install](https://amigaux.org/install/) (the amigaux 1.0 release: the Z3660 68060 routes and the classic 68030 kit)
+- [amigaux.org Install](https://amigaux.org/install/) (the amigaux releases)
+- [`amigaux/amix`](https://github.com/amigaux/amix) @ `a2102e1c` `media/docs/releases/{1.0,1.1,1.1.1,1.1.2}.md` and `docs/WHATS-NEW.md` (1.1.2: kernels 68030-261115-78 and 68060-261115-67, the 1.1 package repository, updates with `apkg`; `Xrtg` with `Xzz9000` as a link), read 2026-11-20

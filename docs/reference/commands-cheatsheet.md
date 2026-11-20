@@ -124,9 +124,11 @@ so verify against the client's own catalog, not a guessed path. Full format spec
 
 ## Kernel and driver builds
 
-Stock Amix is a **monolithic SVR4 kernel with no loadable modules** ✅ ([one third-party
-exception](../how-it-works/kernel-architecture.md#loadable-modules)) — drivers are statically linked
-in, so adding or changing a driver means **relinking the kernel and rebooting**. The kernel
+Stock Amix is a **monolithic SVR4 kernel with no loadable modules** ✅ — drivers are statically linked
+in, so on a stock kernel adding or changing a driver means **relinking the kernel and rebooting**.
+amigaux 1.1 and later ship loadable modules on both kernel lines, and drivers install as packages
+with `apkg` ✅ ([loadable kernel modules](../drivers/loadable-modules.md); the other efforts:
+[kernel architecture](../how-it-works/kernel-architecture.md#loadable-modules)). The kernel
 source/objects live in **`/usr/sys`** ✅; the switch tables live in **`master.d/kernel.c`** ✅.
 
 | Command | What it does | Tag |
@@ -379,5 +381,6 @@ Measured on the stock 2.1c install (emulated 68030), 2026-10-30.
 - `grep -v 'a\|b'` passing every line (first-party record, 2026-10-31) ✅ — the amix `userland/base` DHCP-client soak on the emulated 2.1c bench image (stock userland): `grep -v` with a three-way `\|` pattern over a 239-line log printed all 239 lines, the lines it was meant to drop among them.
 - The **amix-cdfs** project @ `31e8c3b` (`6f727b1`+`d3beca7`, `platform/amix/mount.c`) — the `/usr/lib/fs/<fstype>/mount` helper requirement, `/etc/mnttab` being userland-maintained (`O_APPEND`), and `umount(1M)` matching by the *special* field (so a device-less fs records its mount point there), measured on a real A4000 + Z3660 + stock-kernel precedent (`/proc`, `/dev/fd`), 2026-07-13 ✅. See [the driver model](../drivers/driver-model.md#writing-an-in-kernel-filesystem-the-svr4-vfs_mount-contract).
 - [amigaunix.com](https://www.amigaunix.com/doku.php/home) — networking, patch-disk, y2k-dst, tape-creation, downloads pages (community-reported items above).
-- The **amix-packagemanager** repo tooling (`tools/repo/publish.sh`, `gen-catalog.py`) — the HTTP package-repo `pkgs/`-segment URL layout, verified live 2026-07-22 ✅.
+- The package-repository tooling, now [`amigaux/amix`](https://github.com/amigaux/amix) `userland/pkgtools` (`tools/repo/publish.sh`, `gen-catalog.py`; formerly the amix-packagemanager repo) — the HTTP package-repo `pkgs/`-segment URL layout, verified live 2026-07-22 ✅.
+- The loadable modules on amigaux 1.1 and later: [`amigaux/amix`](https://github.com/amigaux/amix) `kernel/drivers/README.md` (each driver a loadable module in the kernel-space catalog) and `docs/WHATS-NEW.md` (the 1.1.2 kernels `kern30m` k30.1.5 and `kern46m` k46.1.6), read 2026-11-20 ✅.
 - The diff/patch rows: measured on an emulated stock 2.1c 68030 during the amix-packages diffutils 2.8.1 port, 2026-10-29 (first-party record) ✅.

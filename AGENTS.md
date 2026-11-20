@@ -44,7 +44,7 @@ analysis via `tools/inspect-adf.sh`", repo paths). No page ships without it.
 - **Descriptive link text** (`[the Ditto driver paper](...)`, never "click here").
 - **Reproducibility over prose:** prefer exact commands, config tables, file paths, and minor/major
   numbers to hand-wavy description. Fence all code/config; make it copy-pastable.
-- **Cross-link** related pages with relative Markdown links. Link to the live `docs/reference/glossary.md`
+- **Cross-link** related pages with relative Markdown links. Link to `docs/how-it-works/glossary.md`
   on first use of a jargon term where helpful.
 - Keep paragraphs short. Lead with the answer, then the detail (inverted pyramid).
 

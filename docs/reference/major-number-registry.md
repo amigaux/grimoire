@@ -6,7 +6,7 @@ status: draft
 
 # Major-Number Registry
 
-**Pick a character major in 55–67 or 69.** Everything below 55 is either stock, claimed by a
+**Pick a character major in 57–67 or 69.** Everything below 57 is either stock, claimed by a
 community driver or the 1.1 module line, or a trap; 70 and above does not exist without editing the array bounds. That one
 sentence is the whole answer — the rest of this page is the evidence, the other three namespaces
 nobody tracks, and the two collisions that already exist in the wild.
@@ -83,21 +83,23 @@ between the two shows **five hunks, all of them hydra** — so both trees agree 
 | **45** | `kdebug` — only under `KERNEL_DEBUGGER` | stock | ⚠ **avoid** — same ✅ |
 | 46 | `audio` | stock | occupied ✅ |
 | **47** | **`mx`** (stock contrib) ⚔ **`hydra`** (community) | — | ⚔ **COLLISION** — see §2.1 ✅ |
-| **48** | `random` (isoriano1968 dev tree, unpublished) — **vacated by `z3660eth` 2026-07-30** | — | 🟡 dev-tree prose only; collision resolved — see §2.2 |
-| **49** | **`zz9000`** (isoriano1968) — **also the Z3660 RTG target** (`amix-z3660rtg`, a row-selected build of the same driver, 2026-09-16 design decision: same node `/dev/zz9000`, same ABI, no new major claimed) | community | claimed ✅ |
+| **48** | **`random`** — the amigaux module (`kernel/modules/random`: `/dev/random` minor 0, `/dev/urandom` minor 1; in the 1.1 registry since 2026-10-31); also the number isoriano1968's unpublished dev tree used for its `random` — **vacated by `z3660eth` 2026-07-30** | community | claimed ✅ (1.1 registry); collision resolved — see §2.2 |
+| **49** | **`zz9000`** (isoriano1968) and **`z3660rtg`**, the amigaux module built from it (the project's fork `amigaux/amix-z3660rtg`) for the Z3660 RTG and the MNT ZZ9000 (`/dev/zz9000`, and `/dev/zz9001` for a ZZ9000 beside a Z3660; packages `z3660rtg-k30`/`-k46`, shipped in 1.1.2) — one driver, same ABI, no new major claimed | community | claimed ✅ (1.1 registry) |
 | 50 | `sad` — STREAMS administrative driver | stock | occupied ✅ |
 | **51** | **`z3660eth`/`zen0`** (this family) — renumbered from 48, 2026-07-30 | community | claimed ✅ — **live in shipped kernels: `mknod /dev/zen0 c 51 0` verified on real hardware 2026-09-09** (A4000 + Z3660, `zen0` up at 0 % packet loss). |
 | **52** | **`monsw`** — the monitor switch (amigaux; static in the 040/060 port's kernels, a module in 1.1) | community | claimed ✅ |
 | **53** | **`kinfo`** — the 1.1 kernel-identity device (static floor); also the static Paula driver's number, which moves to 54 as a 1.1 module | community | claimed ✅ (1.1 registry) / 🟡 the static Paula claim |
 | **54** | **`paula`** — the Paula audio module of 1.1 | community | claimed ✅ (1.1 registry) |
-| **55–67** | — | — | ✅ **FREE** — verified row-by-row in two trees; **take a slot here** |
-| **68** | **`va2000`** (asokero) | community | claimed ✅ |
+| **55** | **`zz9ksvc`** — the ZZ9000/Z3660 service channel module (amigaux, `kernel/modules/zz9ksvc`, `/dev/zz9ksvcN`) | community | claimed ✅ (1.1 registry, 2026-11-01) |
+| **56** | **`xsurf`** — the X-Surf / X-Surf-100 STREAMS ethernet module (amigaux, `kernel/drivers/xsurf`, interface `xsf0`) | community | claimed ✅ (1.1 registry, 2026-11-14) |
+| **57–67** | — | — | ✅ **FREE** — verified row-by-row in two trees; **take a slot here** |
+| **68** | **`va2000`** (asokero's driver; also the amigaux module built from the project's fork `amigaux/va2000-amix`, packages `va2000-k30`/`-k46`, 1.1.2) | community | claimed ✅ (1.1 registry, 2026-11-15) |
 | **69** | — | — | ✅ **FREE** — the last slot in the array |
 | 70+ | *does not exist* | — | 🚫 requires extending `cdevsw[]` ✅ |
 
 Every row from `/*51*/` to `/*69*/` reads literally
 `ND,ND,ND,ND,ND,ND,ND,ND,ND,ND,notty,nostr,nullflag,` in the published community tree ✅ — slots 48,
-49 and 68 are the same empty filler there, because those drivers live in *other* authors' trees.
+49, 55, 56 and 68 are the same empty filler there, because those drivers live in *other* trees.
 
 ## 2. The two live collisions
 
@@ -142,10 +144,10 @@ Against it, `zz9000-amix`'s `integration/kernel.c.txt` states ✅:
 **That is the only evidence for `48 = random` anywhere** — a prose line describing an author's
 **unpublished** development tree 🟡. The *published* `hydra-amix` tree leaves 48 empty ✅.
 
-**Resolution (2026-07-30): `z3660eth` renumbered off 48 to 51** ✅ — the lowest slot of the
-verified-free 51–67/69 range — because this project's own convention (§5) says community claims
+**Resolution (2026-07-30): `z3660eth` renumbered off 48 to 51** ✅ — the lowest slot of the range
+that was verified free then (51–67/69) — because this project's own convention (§5) says community claims
 win, and a documented claim — even a weak one — is cheaper to respect than to argue with. Kernels
-built before 2026-07-30 (and their `/dev/zen0` nodes) register and open 48; current kernels use 51 ✅. 48 now carries only the unpublished-dev-tree `random` claim 🟡.
+built before 2026-07-30 (and their `/dev/zen0` nodes) register and open 48; current kernels use 51 ✅. 48 is now registered to the amigaux `random` module (2026-10-31), the same use the unpublished dev tree described ✅.
 
 ## 3. Block majors — `bdevsw[]`
 
@@ -219,7 +221,7 @@ key is `(manufacturer << 16) | product`, the argument to `autocon()` ✅.
 | `0x144B0001` | Z3660 accelerator (eth + piscsi, combo base `0x10000000`) | shanshe / this family ✅ |
 | `0x6D6E0001` | MNT VA2000 (mfr `0x6D6E`, product 1) | asokero ✅ |
 | `0x6D6E0003` | MNT ZZ9000, **Zorro II product 3** | isoriano1968 ✅ |
-| `0x6D6E0004` | MNT ZZ9000, Zorro III identity | ⚠ **detected and rejected** by the zz9000 driver, which supports only the Zorro II identity ✅ (a driver choice: Zorro III is reachable with an explicit mapping — [correction](../drivers/zorro-autoconfig.md#zorro-iii-boards-and-the-real-zorro-ii-only-wall)) |
+| `0x6D6E0004` | MNT ZZ9000, Zorro III identity | amigaux `z3660rtg` (1.1.2-3; on the 68030 line it needs kernel 68030-261115-78 or later) ✅; **detected and rejected** by isoriano1968's original zz9000 driver, which supports only the Zorro II identity ✅ (a driver choice: Zorro III is reachable with an explicit mapping — [correction](../drivers/zorro-autoconfig.md#zorro-iii-boards-and-the-real-zorro-ii-only-wall)) |
 
 **No collisions today.** Two boards from the same manufacturer (`0x6D6E`, MNT) coexist because they
 carry different product numbers.
@@ -243,8 +245,8 @@ friendliest pattern for a shared kernel and the one this project recommends.
 
 ## 7. Conventions for adding a driver
 
-1. **Take 55–67 or 69.** Never 7, 38, 39, 44, 45 (traps), never ≥ 70 (off the end of the array).
-2. **Respect existing community claims** — 47, 48, 49, 68 (48 = an unpublished dev-tree claim; this project vacated it anyway, 2026-07-30). When in doubt, the party who has *not*
+1. **Take 57–67 or 69.** Never 7, 38, 39, 44, 45 (traps), never ≥ 70 (off the end of the array).
+2. **Respect existing claims** — 47, 48, 49, 51–56, 68 (48 = the amigaux `random` module; `z3660eth` vacated it for 51, 2026-07-30). When in doubt, the party who has *not*
    shipped hardware-proven kernels renumbers.
 3. **A SCSI host adapter takes no new major** — add a `scsicard[]` row under block 18 (§3).
 4. **A filesystem appends to `vfssw[]`** — never inserts (§4).
@@ -263,17 +265,20 @@ friendliest pattern for a shared kernel and the one this project recommends.
 |---|---|---|---|---|
 | [`z3660eth`](../drivers/z3660-ethernet-driver.md) (this family) | **51** (renumbered from 48, 2026-07-30; kernels built before 2026-07-30 register 48, current kernels 51) | — | — | ✅ A4000 + Z3660, 2026-06 (at 48) |
 | [`z3660scsi`](../drivers/z3660-scsi-driver.md) (this family) | via 40 | via **18** (`scsicard[]`, `0x144B0001`) | — | ✅ 2026-06 |
-| [`a4091`](../drivers/a4091-53c710-driver.md) (this family) | via 40 | via **18** (`scsicard[]`, ×3 IDs) | — | 🟡 emulated; metal pending |
+| [`a4091`](../drivers/a4091-53c710-driver.md) (this family) | via 40 | via **18** (`scsicard[]`, ×3 IDs) | — | ✅ A4092 on the 68060 line (root filesystem, 2026-10); 🟡 the A4091 board and the 68030 line: emulated only |
 | `cdfs` (this family) | — | — | `vfssw[]` last row | ✅ 2026-07 |
 | [`monsw`](../drivers/loadable-modules.md#the-two-example-modules) (amigaux) | **52** | — | `parinit` hook (static form) | ✅ |
 | `kinfo` (amigaux 1.1, static floor) | **53** | — | — | ✅ emulated |
-| `paula` (isoriano1968's paula-amix; 1.1 module) | **54** (static form: 53) | — | — | 🟡 |
+| `paula` (1.1 module, from the project's fork `amigaux/amix-paula`; started from isoriano1968's paula-amix) | **54** (static form: 53) | — | — | 🟡 |
 | [`ramdisk`](../drivers/loadable-modules.md#the-two-example-modules) (amigaux 1.1 module) | — | **20** (replaces stock `ram`) | — | ✅ emulated |
 | [`hydra`](../drivers/case-studies/hydra.md) (isoriano1968) | **47** ⚔ | — | `init_tbl[]`, `int2_tbl[]` | ✅ 2026-06 |
 | [`zz9000`](../drivers/case-studies/zz9000.md) (isoriano1968) | **49** | — | `init_tbl[]` | ✅ |
-| `amix-z3660rtg` (this family; the Z3660 RTG **target** of the same `zz9000` driver, `-DZZ9K_TARGET_Z3660` board-table row) | **49** (shared by design — one driver, two board rows) | — | `init_tbl[]` | 🟡 design 2026-09-16; real-hardware status: see the [ZZ9000/Z3660 RTG page](../drivers/case-studies/zz9000.md) |
-| `random` (isoriano1968, unpublished) | **48** (uncontested since 2026-07-30) | — | — | 🟡 prose-only |
-| [`va2000`](../drivers/case-studies/va2000.md) (asokero) | **68** | — | `io_init[]` | ✅ |
+| `z3660rtg` (amigaux module from the project's fork `amigaux/amix-z3660rtg` of the same `zz9000` driver; Z3660 RTG and MNT ZZ9000) | **49** (shared by design — one driver) | — | — | 🟡 shipped in 1.1.2 (z3660rtg 1.1.2-3); the ZZ9000 support is tested in emulation only; Z3660 status: see the [ZZ9000/Z3660 RTG page](../drivers/case-studies/zz9000.md) |
+| `random` (amigaux module, `kernel/modules/random`; isoriano1968's unpublished tree used the same number) | **48** (uncontested since 2026-07-30) | — | — | 🟡 not traced |
+| `zz9ksvc` (amigaux module, `kernel/modules/zz9ksvc`) | **55** | — | — | 🟡 not traced |
+| `xsurf` (amigaux module, `kernel/drivers/xsurf`) | **56** | — | — | 🟡 not traced |
+| [`va2000`](../drivers/case-studies/va2000.md) (asokero; the static driver) | **68** | — | `io_init[]` | ✅ |
+| `va2000` (amigaux module from the project's fork `amigaux/va2000-amix`; 1.1.2) | **68** (the static driver's number) | — | demand class: loads at the first open of `/dev/va2000` | 🟡 |
 | `mx` MAX-125 (stock contrib, 1992) | **47** ⚔ | — | `int2_tbl[]`, `io_poll[]` | 🔴 no modern report |
 | `viper` tape (stock contrib, 1991) | *none* — extends 16 | — | — | 🔴 no modern report |
 
@@ -303,17 +308,29 @@ friendliest pattern for a shared kernel and the one this project recommends.
 - [`isoriano1968/zz9000-amix`](https://github.com/isoriano1968/zz9000-amix) @ `75e2449` —
   `integration/kernel.c.txt` (major 49 entry, the `47/48/49/50` dev-tree prose line), `INSTALL.md`,
   `mkdev.sh` (`mknod /dev/zz9000 c 49 0`), `integration/c1-console.txt`.
-- The amigaux 1.1 module registry, [`amigaux/amix`](https://github.com/amigaux/amix) @ `95bf2f3`
-  `kernel/dlm/abi/registry/majors` (c 49, 51, 52, 53, 54; b 20) and
+- The amigaux 1.1 module registry, [`amigaux/amix`](https://github.com/amigaux/amix) @ `a2102e1c`
+  (last changed `575654ea`, 2026-11-15) `kernel/dlm/abi/registry/majors` (c 48, 49, 51–56, 68;
+  b 20), read 2026-11-20, checked against the modules' `$majors` lines (`kernel/modules/{random,monsw,ramdisk,zz9ksvc}/module/Master`,
+  `kernel/drivers/{z3660eth,xsurf}/module/Master`, the `majors=` keys of the pinned forks
+  `amigaux/amix-z3660rtg`, `amigaux/amix-paula`, `amigaux/va2000-amix`), and
   `kernel/modules/{monsw,ramdisk}/README.md` (the stock `ram` driver on block 20 and its
   replacement) ✅; the static Paula number (53) is from that registry file's comment 🟡.
+- The shipped modules, [`amigaux/amix`](https://github.com/amigaux/amix) @ `a2102e1c`, read 2026-11-20 ✅:
+  `kernel/drivers/README.md` (the forks and what they started from),
+  `kernel/drivers/{z3660rtg,va2000,paula}/*.pin`, `kernel/drivers/z3660rtg/README.md` (ZZ9000 in
+  Zorro II and Zorro III; a Zorro III ZZ9000 on the 68030 needs kernel -78 or later),
+  `kernel/drivers/va2000/README.md` (demand class, major 68), `kernel/drivers/a4091/README.md`
+  (root behind an A4092 on an A4000D + Z3660, 2026-10-03; the 68030 line never on real hardware),
+  `kernel/modules/{random,zz9ksvc}/README.md`, `kernel/drivers/xsurf/README.md`,
+  `media/docs/releases/1.1.2.md` and `docs/WHATS-NEW.md` (z3660rtg 1.1.2-3, va2000 1.1.0-2; the
+  ZZ9000 support tested in emulation only).
 - [`asokero/va2000-amix`](https://github.com/asokero/va2000-amix) @ `fec1c68` — `KERNEL_CHANGES.md`
   (`cdevsw` slot 68, `io_init[]` entry, `mknod /dev/va2000 c 68 0`), `install-va2000-driver.sh`
   (the `/*68*/` literal-match patcher), `src/va2000.c` (`VA2000_PRODUCT = 0x6D6E0001`).
 - [`isoriano1968/hydra-amix`](https://github.com/isoriano1968/hydra-amix) @ `dcb7d24` — `README.md`
   (char 47, tag `hya`, `mknod /dev/hya0 c 47 0`, AutoConfig `0x08490001`).
-- This project's driver manifests — `amix-z3660net/driver.conf` (`net z3660eth … 51 zen` (48 until 2026-07-30)),
-  `amix-z3660scsi/driver.conf` (`0x144B0001 z3660queue`), `amix-a4091/driver.conf`
+- This project's driver manifests in [`amigaux/amix`](https://github.com/amigaux/amix) — `kernel/drivers/z3660eth/driver.conf` (`net z3660eth … 51 zen` (48 until 2026-07-30)),
+  `kernel/drivers/z3660scsi/driver.conf` (`0x144B0001 z3660queue`), `kernel/drivers/a4091/driver.conf`
   (`0x02020054` / `0xc0de0001` / `0xc0de0002`) — and the build harness's free-row gate
   (`build-cross-kernel.sh`, `build-net-kernel.sh`).
 - Cross-tree claim surveys of the published community repos (2026-07-26, 2026-07-27) — the

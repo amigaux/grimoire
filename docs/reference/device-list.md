@@ -14,7 +14,7 @@ Each row carries the same confidence tag the [research brief](https://github.com
 
 ## /dev major/minor numbers
 
-The four stock entries below come from the `ls -l /dev` excerpt in the Ditto driver paper (§5 of the brief) ✅. The three community-driver entries (va2000, hydra, z3660eth) come from the modern driver projects ✅ — va2000 and hydra from §6 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md), and z3660eth from the amix-z3660net project (see [## Sources](#sources)).
+The four stock entries below come from the `ls -l /dev` excerpt in the Ditto driver paper (§5 of the brief) ✅. The three community-driver entries (va2000, hydra, z3660eth) come from the modern driver projects ✅ — va2000 and hydra from §6 of the [research brief](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md), and z3660eth from its directory in [`amigaux/amix`](https://github.com/amigaux/amix) (`kernel/drivers/z3660eth`; see [## Sources](#sources)).
 
 | `/dev` node | Class | Major | Minor | Driver / purpose | Tag |
 |---|---|---|---|---|---|
@@ -22,16 +22,17 @@ The four stock entries below come from the `ls -l /dev` excerpt in the Ditto dri
 | `/dev/par` | char | **21** | 0 | Amiga parallel port (output-only Centronics) | ✅ |
 | `/dev/fd0` | block | **16** | — | Floppy disk driver | ✅ |
 | `/dev/dsk/c0d0s1` | block | **18** | encoded (see below) | SCSI hard-disk driver | ✅ |
-| `/dev/va2000` | char | **68** | 0 | MNT VA2000 RTG framebuffer (`asokero/va2000-amix`) | ✅ |
+| `/dev/va2000` | char | **68** | 0 | MNT VA2000 RTG framebuffer (`va2000` module, the project's fork `amigaux/va2000-amix`; from `asokero/va2000-amix`) | ✅ |
 | `/dev/<hya>` | char | **47** | — | Hydra AmigaNet STREAMS/DLPI driver, tag `hya` (`isoriano1968/hydra-amix`) | ✅ |
-| `/dev/zen0` | char | **51** | 0 | Z3660 onboard-ethernet STREAMS/DLPI driver, tag `zen` (amix-z3660net) — renumbered from 48 on 2026-07-30; 51 verified on real hardware 2026-09-09 | ✅ |
-| `/dev/zz9000` | char | **49** | 0 | MNT ZZ9000 RTG framebuffer (`isoriano1968/zz9000-amix`) — ⚠ see the collision note below | ✅ |
+| `/dev/zen0` | char | **51** | 0 | Z3660 onboard-ethernet STREAMS/DLPI driver, tag `zen` (`kernel/drivers/z3660eth` in amigaux/amix) — renumbered from 48 on 2026-07-30; 51 verified on real hardware 2026-09-09 | ✅ |
+| `/dev/zz9000` | char | **49** | 0 | MNT ZZ9000 / Z3660 RTG framebuffer (`z3660rtg` module, the project's fork `amigaux/amix-z3660rtg`; from `isoriano1968/zz9000-amix`); `/dev/zz9001` for a ZZ9000 beside a Z3660 | ✅ |
 
 **Note:** the major number is the **index into `cdevsw[]` (character) or `bdevsw[]` (block)** in `master.d/kernel.c`. A driver "registers" at a major by occupying that slot. There is no global registry that allocates them — community drivers pick a free slot (va2000 took char 68, hydra took char 47, z3660eth took char 51 — originally 48, zz9000 took char 49) and patch it into `kernel.c` themselves ✅. See [Building and installing a kernel](../drivers/kernel-build.md) for how a slot is wired in.
 
-> ⚠ **Community majors collide across trees.** The `zz9000-amix` author's development kernel assigns
-> **47 hydra, 48 `random`, 49 zz9000, 50 `sad`** ✅ — while this project's family tree assigns **48 to
-> `z3660eth`/`zen0`** ✅. Both are legitimate self-picked free slots; the numbers in this table are
+> ⚠ **Community majors can collide across trees.** The `zz9000-amix` author's development kernel assigns
+> **47 hydra, 48 `random`, 49 zz9000, 50 `sad`** ✅. This project's `z3660eth` first took 48 too; it
+> moved to 51 in 2026-07, and the amigaux `random` module now registers 48, so that collision is
+> gone ✅. Outside the amigaux 1.1 module registry the numbers in this table are
 > **per-project conventions, not a registry**. Before merging drivers from different community trees,
 > check your own `cdevsw[]` in `master.d/kernel.c` and renumber (driver + `mknod`) as needed — the
 > zz9000 INSTALL.md itself tells you to verify 49 is free first ✅.
@@ -42,7 +43,7 @@ The cross-tree claim map outgrew this page. **[The Major-Number Registry](major-
 now carries every known `cdevsw[]`/`bdevsw[]`/`vfssw[]`/AutoConfig claim across the community trees —
 including the live collision (stock `mx` vs `hydra` at char 47; the `z3660eth`-vs-unpublished-`random`
 collision at char 48 was **resolved** when `z3660eth` moved to 51 on 2026-07-30), the free ranges
-(55–67, 69, after the 1.1 module registry took 52–54; `CDEVSIZE` = 70 so nothing above 69 exists), and the
+(57–67, 69; the 1.1 module registry holds 48, 49, 51–56 and 68; `CDEVSIZE` = 70 so nothing above 69 exists), and the
 conventions for adding a driver ✅. Pick your slot there.
 
 ### Minor-number encoding for the SCSI disk (major 18)
@@ -109,19 +110,26 @@ Unlike hydra it programs **no NIC chip** — it talks the Z3660 firmware's frame
 
 ### The va2000 framebuffer (char 68)
 
-The VA2000 driver is a single-file char framebuffer driver. After building and installing it you create the node with:
+The VA2000 driver is a single-file char framebuffer driver. On amigaux 1.1.2 and later it is a loadable module: the package installs the module, the node `/dev/va2000` and the card file `/etc/display.d/va2000`, and the module loads at the first open of `/dev/va2000` ✅:
+
+```sh
+apkg install va2000-k46      # or va2000-k30 on the 68030 line
+```
+
+On a stock kernel you build the static driver into the kernel instead, and create the node with:
 
 ```sh
 mknod /dev/va2000 c 68 0
 ```
 
-It supports 800×600 / 1024×768 / 1280×720 at 16-bit ✅, and it is the device the `Xrtg` X11 server draws into. See [the VA2000 case study](../drivers/case-studies/va2000.md) and [X11/RTG drivers](../drivers/x11-rtg-drivers.md).
+It supports 800×600 / 1024×768 / 1280×720 at 16-bit ✅, and it is the device the `Xrtg` X server draws into (asokero's X11R5 server first; on 1.1.2 the X11R6.3 `Xrtg -card va2000`, started by `xstart`). See [the VA2000 case study](../drivers/case-studies/va2000.md) and [X11/RTG drivers](../drivers/x11-rtg-drivers.md).
 
 ### The zz9000 framebuffer (char 49)
 
-The second MNT framebuffer driver, for the **ZZ9000** — but only its **Zorro II product 3** identity
-(mfr `0x6d6e`); the Zorro III product 4 identity is detected and rejected because Amix has no Zorro
-III bus support ✅. Node and defaults:
+The second MNT framebuffer driver, for the **ZZ9000** (mfr `0x6d6e`). isoriano1968's original driver
+takes only the **Zorro II product 3** identity and rejects the Zorro III product 4 one ✅. The amigaux
+`z3660rtg` module built from it (1.1.2-3) drives a ZZ9000 in Zorro II or Zorro III, and the Z3660's
+own RTG; a Zorro III ZZ9000 on the 68030 line needs kernel 68030-261115-78 or later ✅. Node and defaults:
 
 ```sh
 mknod /dev/zz9000 c 49 0        # done by the repo's mkdev.sh
@@ -129,8 +137,7 @@ mknod /dev/zz9000 c 49 0        # done by the repo's mkdev.sh
 
 Mode setting up to 1920×800 RGB565 (18 mode IDs defined), `mmap()` framebuffer access, a
 13-ioctl API (`'Z'<<8` group), and an optional late-activated ANSI framebuffer console ✅. It is the
-device the **X11R6.3 `Xzz9000`** server draws into. Mind the ⚠ major-collision note above (48/49
-differ between community trees). See [the zz9000 case study](../drivers/case-studies/zz9000.md) and
+device the **X11R6.3 `Xrtg`** server draws into (`Xzz9000` is a link to it). See [the zz9000 case study](../drivers/case-studies/zz9000.md) and
 [the x11r6.3-amix case study](../drivers/case-studies/x11r63-zz9000.md).
 
 ### Other device nodes referenced in the brief
@@ -198,11 +205,11 @@ Because `sd.c` inserts detected controllers **sorted ascending by board base add
 |---|---|---|
 | **Built-in (mono X)** | Default; monochrome X server, reportedly slow | ✅ / 🟡 |
 | **A2410 "Lowell"** | TMS34010, 1024×768, native color graphics via TIGA (`olinit -- -tiga`) | ✅ |
-| **MNT VA2000 (RTG)** | Via the `va2000-amix` char-68 driver + the `Xrtg` X11R5 server | ✅ |
-| **MNT ZZ9000 (RTG)** | Via the `zz9000-amix` char-49 driver + the `Xzz9000` X11R6.3 server; **must be configured as Zorro II product 3** (its Zorro III product 4 identity is rejected); Mesa 3.1 software GL available on top | ✅ |
+| **MNT VA2000 (RTG)** | Via the `va2000` module (char 68) + the X11R6.3 `Xrtg` server, started by `xstart`; originally asokero's X11R5 `Xrtg` | ✅ |
+| **MNT ZZ9000 (RTG)** | Via the `z3660rtg` module (char 49) + the X11R6.3 `Xrtg` server (`Xzz9000` is a link); Zorro II or Zorro III with the amigaux module (1.1.2), Zorro II product 3 only with isoriano's original `zz9000-amix` driver; Mesa 3.1 software GL available on top | ✅ |
 | Picasso II / Piccolo / Domino / etc. | Added by Gateway! Vol.2 CD; **Zorro II / linear modes only** | 🟡 |
 
-The A2410 is the *officially* supported color option; the VA2000 (X11R5) and ZZ9000 (X11R6.3) paths are the modern community routes. See [X11 & the desktop](../how-it-works/x11-and-desktop.md) and [X11/RTG drivers](../drivers/x11-rtg-drivers.md).
+The A2410 is the *officially* supported color option; the modern community routes are the VA2000 and the ZZ9000, both under the X11R6.3 `Xrtg` server today (the VA2000 first ran asokero's X11R5 server). See [X11 & the desktop](../how-it-works/x11-and-desktop.md) and [X11/RTG drivers](../drivers/x11-rtg-drivers.md).
 
 ### Networking
 
@@ -240,13 +247,14 @@ On a running system, list the device nodes and read their major/minor with `ls -
 - Ditto, *Writing Amix Device Drivers*, 1990 European Amiga Developer's Conference — §5 of [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) (console char 0, par char 21, fd0 block 16, SCSI disk block 18, minor = addr/LUN/partition; `cdevsw`/`bdevsw` switch tables; `int2_tbl[]` interrupt handlers).
 - [`sources/research-brief.md`](https://github.com/amigaux/grimoire/blob/master/sources/research-brief.md) §2 (supported machines & expansion cards, Zorro II only, SCSI ID 6 / tape ID 4), §6 (va2000 char 68, hydra char 47/`hya`, AutoConfig IDs).
 - `amix_21_root.adf` analysis via `tools/inspect-adf.sh` (`/dev/rmt/4h`, `BPART=/dev/dsk/c${SCSI}d0s${BOOTPART}`).
+- The shipped modules, [`amigaux/amix`](https://github.com/amigaux/amix) @ `a2102e1c`, read 2026-11-20 ✅: `kernel/dlm/abi/registry/majors` (c 48, 49, 51–56, 68; b 20), `kernel/drivers/README.md`, `kernel/drivers/{va2000,z3660rtg}/README.md` and their pins, `kernel/drivers/va2000/pkg/pkginfo.k46` (the package ships `/dev/va2000`), `media/docs/releases/1.1.2.md` (va2000 1.1.0-2, z3660rtg 1.1.2-3 with a ZZ9000 in Zorro II or Zorro III, X11R6.3 6.3-11 with `Xrtg` and `Xzz9000`/`X` as links).
 - Driver repos: [`asokero/va2000-amix`](https://github.com/asokero/va2000-amix), [`asokero/lszorro-amix`](https://github.com/asokero/lszorro-amix), [`isoriano1968/hydra-amix`](https://github.com/isoriano1968/hydra-amix).
 - [`isoriano1968/zz9000-amix`](https://github.com/isoriano1968/zz9000-amix) @ `75e2449` (brief §21) — `/dev/zz9000` char major 49 minor 0, Zorro II product 3 (`0x6d6e0003`) only, the author's-tree major assignments (47 hydra / 48 random / 49 zz9000 / 50 sad) behind the collision note. See [the zz9000 case study](../drivers/case-studies/zz9000.md).
 - [amigaunix.com](https://www.amigaunix.com/doku.php/home) — A2232, requirements, networking pages (community-reported items: GVP Series II, Ariadne, Gateway! graphics cards).
 - The A4091-on-Amix project — `NOTES.md` §3, §8, §12–§15 (lab notebook, reproduced locally ✅) and `src/`/`tools/`. The minor decode (`sdunit`/`sdcard`/`sdpart`, `SDCARDS`), block major 18 / char major 40, and `dev_t = (major<<18)|minor` are verified against `amiga/alien/sd.h`; the `/dev/scsi` char major 11 `gsioctl` path against `src/gsio.c`.
 - `src/kernel-patches/sd.c` — the `0x02020054, &a4091queue, "A4091 SCSI"` `scsicard[]` row and the base-address-sorted `queue[]` insertion.
 - `src/a4091-wr.c` — `A4091_PROD = 0x02020054`, phys base `0x40000000`; the `sptalloc()`-mapped 53C710 driver.
-- The [amix-a4091](https://github.com/jusii/amix-a4091) `README.md` and `driver.conf` — the A4092 (`0xc0de0001`) and A4770 (`0xc0de0002`) identities bound to the same `a4091queue`, the 68030 line not yet run on real hardware, and the 68040/68060 arm (`-DA4091_KVA`) mapping both register pages with `dev_kvmap()` (non-cacheable; `src/a4091-wr.c`) and carrying the root filesystem behind an A4092 on an A4000 + Z3660 (68060), 2026-10-03 🟡; Installer-NG (not public) `docs/release-notes-amigaux-1.0.md` — the 1.0 68060 media's root on a disk behind the A4092.
+- [`amigaux/amix` `kernel/drivers/a4091`](https://github.com/amigaux/amix/tree/master/kernel/drivers/a4091) `README.md` and `driver.conf` — the A4092 (`0xc0de0001`) and A4770 (`0xc0de0002`) identities bound to the same `a4091queue`, the 68030 line not yet run on real hardware, and the 68040/68060 arm (`-DA4091_KVA`) mapping both register pages with `dev_kvmap()` (non-cacheable; `src/a4091-wr.c`) and carrying the root filesystem behind an A4092 on an A4000 + Z3660 (68060), 2026-10-03 🟡; Installer-NG (not public) `docs/release-notes-amigaux-1.0.md` — the 1.0 68060 media's root on a disk behind the A4092.
 - a4091.device open-source project: [`A4091/a4091-software`](https://github.com/A4091/a4091-software) (A4091 ROM + SCRIPTS assembler).
-- The amix-z3660net project — the native `z3660eth` STREAMS/DLPI driver (`src/z3660eth.{c,h}`, `driver.conf`'s `net z3660eth … 51 zen` stanza, 48 until 2026-07-30), **validated on a real A4000 + Z3660, 2026-06-21** ✅: `cdevsw` char major **51** (48 at the time of that validation), tag `zen` / interface `zen0`, AutoConfig `0x144B0001`, combo base `0x10000000`, MAC `00:80:51:01:02:03`. See [the Z3660 ethernet driver](../drivers/z3660-ethernet-driver.md).
-- The [amix-z3660scsi](https://github.com/jusii/amix-z3660scsi) project @ `0d67693` — the native `z3660` piscsi **block** driver (`src/z3660.c`, `driver.conf`'s `0x144B0001 z3660queue "Z3660 SCSI" z3660.c probe=z3660present` stanza, which the [amix-kerntools](https://github.com/jusii/amix-kerntools) `amix-build` harness turns into the `scsicard[]` row and probe hook of the stock `sd.c`), **validated on a real A4000 + Z3660, 2026-06-12/13** ✅: registers in `sd.c`'s `scsicard[]` (block major 18 / char major 40), root disk `/dev/rdsk/c6d0s1`, AutoConfig `0x144B0001`, fixed combo base `0x10000000`. See [the Z3660 piscsi SCSI driver](../drivers/z3660-scsi-driver.md).
+- [`amigaux/amix` `kernel/drivers/z3660eth`](https://github.com/amigaux/amix/tree/master/kernel/drivers/z3660eth) (formerly the amix-z3660net project) — the native `z3660eth` STREAMS/DLPI driver (`src/z3660eth.{c,h}`, `driver.conf`'s `net z3660eth … 51 zen` stanza, 48 until 2026-07-30), **validated on a real A4000 + Z3660, 2026-06-21** ✅: `cdevsw` char major **51** (48 at the time of that validation), tag `zen` / interface `zen0`, AutoConfig `0x144B0001`, combo base `0x10000000`, MAC `00:80:51:01:02:03`. See [the Z3660 ethernet driver](../drivers/z3660-ethernet-driver.md).
+- [`amigaux/amix` `kernel/drivers/z3660scsi`](https://github.com/amigaux/amix/tree/master/kernel/drivers/z3660scsi) @ `af5e643` (formerly `0d67693` in the amix-z3660scsi project) — the native `z3660` piscsi **block** driver (`src/z3660.c`, `driver.conf`'s `0x144B0001 z3660queue "Z3660 SCSI" z3660.c probe=z3660present` stanza, which the [amix-kerntools](https://github.com/jusii/amix-kerntools) `amix-build` harness turns into the `scsicard[]` row and probe hook of the stock `sd.c`), **validated on a real A4000 + Z3660, 2026-06-12/13** ✅: registers in `sd.c`'s `scsicard[]` (block major 18 / char major 40), root disk `/dev/rdsk/c6d0s1`, AutoConfig `0x144B0001`, fixed combo base `0x10000000`. See [the Z3660 piscsi SCSI driver](../drivers/z3660-scsi-driver.md).
